@@ -24,30 +24,40 @@ namespace TaskManager
     /// </summary>
     public sealed partial class MainWindow : Window
     {
-        private ProcessService _service = new ProcessService();
-        public ObservableCollection<ProcessItem> Processes { get; set; } = new();
+        private readonly ProcessService _service = new();
+        public ObservableCollection<ProcessItem> Processes { get; } = new();
 
         public MainWindow()
         {
             this.InitializeComponent();
-            LoadData();
+            _ = RefreshDataAsync(); // Initial load
         }
 
-        private void LoadData()
+        private async void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            Processes.Clear();
-            var data = _service.GetProcesses();
-            foreach (var item in data) Processes.Add(item);
+            await RefreshDataAsync();
         }
 
-        private void RefreshButton_Click(object sender, RoutedEventArgs e) => LoadData();
+        private async Task RefreshDataAsync()
+        {
+            // Fetch data on a background thread so the UI doesn't lag
+            var data = await Task.Run(() => _service.GetProcesses());
+
+            Processes.Clear();
+            foreach (var item in data)
+            {
+                Processes.Add(item);
+            }
+        }
 
         private void KillButton_Click(object sender, RoutedEventArgs e)
         {
             if (ProcessListView.SelectedItem is ProcessItem selected)
             {
-                _service.KillProcess(selected.Id);
-                LoadData(); // Refresh list after killing
+                if (_service.KillProcess(selected.Id))
+                {
+                    _ = RefreshDataAsync(); // Refresh after success
+                }
             }
         }
     }
