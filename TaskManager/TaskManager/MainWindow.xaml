@@ -12,8 +12,47 @@
     <Window.SystemBackdrop>
         <MicaBackdrop />
     </Window.SystemBackdrop>
+	
+	<Grid Margin="20">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
 
-    <Grid>
+		<StackPanel Orientation="Horizontal" Spacing="10" Grid.Row="0" Margin="0,0,0,10">
+			<Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click"/>
+			<Button x:Name="KillButton" Content="End Task" Click="KillButton_Click"/>
+		</StackPanel>
 
-    </Grid>
+		<ListView x:Name="ProcessListView" Grid.Row="1" ItemsSource="{x:Bind Processes}">
+			<ListView.HeaderTemplate>
+				<DataTemplate>
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="200"/>
+							<ColumnDefinition Width="100"/>
+							<ColumnDefinition Width="100"/>
+						</Grid.ColumnDefinitions>
+						<TextBlock Text="Name" FontWeight="Bold" Grid.Column="0"/>
+						<TextBlock Text="Memory" FontWeight="Bold" Grid.Column="1"/>
+						<TextBlock Text="Status" FontWeight="Bold" Grid.Column="2"/>
+					</Grid>
+				</DataTemplate>
+			</ListView.HeaderTemplate>
+			<ListView.ItemTemplate>
+				<DataTemplate x:DataType="local:ProcessItem">
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="200"/>
+							<ColumnDefinition Width="100"/>
+							<ColumnDefinition Width="100"/>
+						</Grid.ColumnDefinitions>
+						<TextBlock Text="{x:Bind Name}" Grid.Column="0"/>
+						<TextBlock Text="{x:Bind MemoryUsage}" Grid.Column="1"/>
+						<TextBlock Text="{x:Bind Status}" Grid.Column="2"/>
+					</Grid>
+				</DataTemplate>
+			</ListView.ItemTemplate>
+		</ListView>
+	</Grid>
 </Window>
