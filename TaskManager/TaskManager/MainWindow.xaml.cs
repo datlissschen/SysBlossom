@@ -25,6 +25,7 @@ namespace TaskManager
     /// </summary>
     public sealed partial class MainWindow : Window
     {
+        private DispatcherTimer _refreshTimer;
         private readonly ProcessService _service = new();
         public ObservableCollection<ProcessItem> Processes { get; } = new();
 
@@ -32,6 +33,12 @@ namespace TaskManager
         {
             this.InitializeComponent();
             _ = RefreshDataAsync(); // Initial load
+            _refreshTimer = new DispatcherTimer();
+            _refreshTimer.Interval = TimeSpan.FromSeconds(2);
+            _refreshTimer.Tick += async (s, e) => await RefreshDataAsync();
+            _refreshTimer.Start();
+
+            _ = RefreshDataAsync();
         }
 
         private async void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -50,6 +57,8 @@ namespace TaskManager
                 Processes.Add(item);
             }
         }
+
+
 
         private void KillButton_Click(object sender, RoutedEventArgs e)
         {

@@ -42,15 +42,22 @@
 			<ListView.ItemTemplate>
 				<DataTemplate x:DataType="local:ProcessItem">
 					<Grid>
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="200"/>
-							<ColumnDefinition Width="100"/>
-							<ColumnDefinition Width="100"/>
-						</Grid.ColumnDefinitions>
-						<TextBlock Text="{x:Bind Name}" Grid.Column="0"/>
-						<TextBlock Text="{x:Bind MemoryUsage}" Grid.Column="1"/>
-						<TextBlock Text="{x:Bind Status}" Grid.Column="2"/>
-					</Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="100"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Name" FontWeight="Bold" Grid.Column="0"/>
+                        <TextBlock Text="CPU" FontWeight="Bold" Grid.Column="1"/>
+                        <TextBlock Text="Memory" FontWeight="Bold" Grid.Column="2"/>
+                        <TextBlock Text="Status" FontWeight="Bold" Grid.Column="3"/>
+
+                        <TextBlock Text="{x:Bind Name}" Grid.Column="0"/>
+                        <TextBlock Text="{x:Bind CpuUsageDisplay}" Grid.Column="1"/>
+                        <TextBlock Text="{x:Bind MemoryUsage}" Grid.Column="2"/>
+                        <TextBlock Text="{x:Bind Status}" Grid.Column="3"/>
+                    </Grid>
 				</DataTemplate>
 			</ListView.ItemTemplate>
 		</ListView>
