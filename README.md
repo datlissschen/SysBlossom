@@ -15,6 +15,10 @@ A taskmanager that makes working with it more fun and cute.
 
 Since a Task Manager needs icons for every app (Chrome, Spotify, etc.), you can extract them in C# using Icon.ExtractAssociatedIcon(processPath). To make them "pretty," you can display them inside a Border with a heavy CornerRadius and a soft DropShadow to make them look like stickers!
 
+## logic for the process use
+ we use the method TotalProcessorTime. We track all of the processors with it
+CPU %= (ΔProzesszeit / (ΔEchtzeit×Anzahl logischer Kerne )) ​×100
+
 ##📂 Recommended Project Structure
 
 #For a Task Manager, I recommend a simple MVVM (Model-View-ViewModel) structure. It sounds fancy, but it just keeps your "Pretty" code separate from your "System" code:
