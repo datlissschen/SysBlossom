@@ -48,13 +48,23 @@ namespace TaskManager
 
         private async Task RefreshDataAsync()
         {
-            // Fetch data on a background thread so the UI doesn't lag
             var data = await Task.Run(() => _service.GetProcesses());
+
+            int? selectedId = (ProcessListView.SelectedItem as ProcessItem)?.Id;
 
             Processes.Clear();
             foreach (var item in data)
             {
                 Processes.Add(item);
+            }
+
+            if (selectedId.HasValue)
+            {
+                var itemToSelect = Processes.FirstOrDefault(p => p.Id == selectedId.Value);
+                if (itemToSelect != null)
+                {
+                    ProcessListView.SelectedItem = itemToSelect;
+                }
             }
         }
 

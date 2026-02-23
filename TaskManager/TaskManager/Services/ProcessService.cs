@@ -66,7 +66,10 @@ namespace TaskManager
             var ghostIds = _history.Keys.Where(id => !activeIds.Contains(id)).ToList();
             foreach (var id in ghostIds) _history.Remove(id);
 
-            return processList.OrderByDescending(x => x.CpuUsage).ToList();
+            return processList
+                .OrderByDescending(x => x.CpuUsage)
+                .ThenBy(x => x.Name)
+                .ToList();
         }
 
         /// <summary>
