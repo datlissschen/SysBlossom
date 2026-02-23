@@ -1,3 +1,5 @@
+using Microsoft.UI.Xaml.Media;
+
 namespace TaskManager
 {
     /// <summary>
@@ -11,6 +13,7 @@ namespace TaskManager
         public string CpuUsageDisplay => $"{CpuUsage:F1}%";
         public string MemoryUsage { get; set; } = string.Empty; // Formatted string (e.g., "150 MB")
         public string Status { get; set; } = "Active";
-
+        public string? ImagePath { get; set; }
+        public Microsoft.UI.Xaml.Media.ImageSource? IconSource { get; set; }
     }
 }

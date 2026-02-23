@@ -14,6 +14,7 @@ using Windows.Foundation;
 using Windows.Foundation.Collections;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using System.Drawing;
 
 namespace TaskManager
 {
@@ -59,6 +60,20 @@ namespace TaskManager
             foreach (var item in filteredData)
             {
                 Processes.Add(item);
+
+                // Load icon if path exists
+                if (!string.IsNullOrEmpty(item.ImagePath) && File.Exists(item.ImagePath))
+                {
+                    try
+                    {
+                        using var icon = System.Drawing.Icon.ExtractAssociatedIcon(item.ImagePath);
+                        if (icon != null)
+                        {
+                            item.IconSource = await IconHelper.GetWinUI3BitmapSourceFromIcon(icon);
+                        }
+                    }
+                    catch { /* Skip icons we can't load */ }
+                }
             }
 
             if (selectedId.HasValue)

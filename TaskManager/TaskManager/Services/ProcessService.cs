@@ -1,7 +1,13 @@
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
+using Windows.Graphics.Imaging;
+
 namespace TaskManager
 {
     public class ProcessService
@@ -46,6 +52,12 @@ namespace TaskManager
 
                     // save values
                     _history[p.Id] = (currentTime, currentProcessorTime);
+                    string? fullPath = null;
+                    try
+                    {
+                        fullPath = p.MainModule?.FileName;
+                    }
+                    catch { /* Access Denied for path */ }
 
                     processList.Add(new ProcessItem
                     {
@@ -53,7 +65,8 @@ namespace TaskManager
                         Name = p.ProcessName,
                         CpuUsage = Math.Clamp(cpuPercent, 0, 100),
                         MemoryUsage = $"{(p.WorkingSet64 / 1024 / 1024)} MB",
-                        Status = p.Responding ? "Active" : "Hung"
+                        Status = p.Responding ? "Active" : "Hung",
+                        ImagePath = fullPath
                     });
                 }
                 catch
@@ -91,7 +104,18 @@ namespace TaskManager
             }
         }
 
-
+        private ImageSource? GetIcon(string fileName)
+        {
+            try
+            {
+                using (Icon icon = Icon.ExtractAssociatedIcon(fileName)!)
+                {
+                    // Convert System.Drawing.Icon to a WinUI compatible ImageSource
+                    return null; 
+                }
+            }
+            catch { return null; }
+        }
 
     }
 }

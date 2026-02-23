@@ -34,12 +34,17 @@
 				<DataTemplate>
 					<Grid>
 						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="300"/>
+                            <ColumnDefinition Width="250"/>
+                            <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="150"/>
                             <ColumnDefinition Width="150"/>
 							<ColumnDefinition Width="150"/>
 						</Grid.ColumnDefinitions>
-						<TextBlock Text="Name" FontWeight="Bold" Grid.Column="0"/>
+                        <StackPanel Orientation="Horizontal" Grid.Column="0" Spacing="10">
+                            <Image Source="{x:Bind Icon}" Width="20" Height="20" VerticalAlignment="Center"/>
+                            <TextBlock Text="{x:Bind Name}" FontWeight="Bold" VerticalAlignment="Center"/>
+                        </StackPanel>
+
                         <TextBlock Text="CPU" FontWeight="Bold" Grid.Column="1"/>
                         <TextBlock Text="Memory" FontWeight="Bold" Grid.Column="2"/>
 						<TextBlock Text="Status" FontWeight="Bold" Grid.Column="3"/>
