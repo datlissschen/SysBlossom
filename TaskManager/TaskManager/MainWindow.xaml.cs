@@ -61,18 +61,33 @@ namespace TaskManager
             {
                 Processes.Add(item);
 
-                // Load icon if path exists
-                if (!string.IsNullOrEmpty(item.ImagePath) && File.Exists(item.ImagePath))
+                if (!string.IsNullOrEmpty(item.ImagePath))
                 {
-                    try
+                    // Check Cache
+                    if (IconCache.TryGetIcon(item.ImagePath, out var cachedIcon))
                     {
-                        using var icon = System.Drawing.Icon.ExtractAssociatedIcon(item.ImagePath);
-                        if (icon != null)
-                        {
-                            item.IconSource = await IconHelper.GetWinUI3BitmapSourceFromIcon(icon);
-                        }
+                        item.IconSource = cachedIcon;
                     }
-                    catch { /* Skip icons we can't load */ }
+                    else
+                    {
+                        // Only extract if not found in cache
+                        try
+                        {
+                            if (System.IO.File.Exists(item.ImagePath))
+                            {
+                                using var icon = System.Drawing.Icon.ExtractAssociatedIcon(item.ImagePath);
+                                if (icon != null)
+                                {
+                                    var bitmapSource = await IconHelper.GetWinUI3BitmapSourceFromIcon(icon);
+
+                                    // Add to Cache for next time
+                                    IconCache.AddIcon(item.ImagePath, bitmapSource);
+                                    item.IconSource = bitmapSource;
+                                }
+                            }
+                        }
+                        catch { /* Skip errors */ }
+                    }
                 }
             }
 
