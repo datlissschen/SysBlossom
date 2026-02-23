@@ -19,12 +19,17 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<StackPanel Orientation="Horizontal" Spacing="10" Grid.Row="0" Margin="0,0,0,10">
-			<Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click"/>
-			<Button x:Name="KillButton" Content="End Task" Click="KillButton_Click"/>
-		</StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="10" Grid.Row="0" Margin="0,0,0,10">
+            <TextBox x:Name="SearchBox" 
+             PlaceholderText="🔍 Search processes..." 
+             Width="250" 
+             TextChanged="SearchBox_TextChanged"/>
 
-		<ListView x:Name="ProcessListView" Grid.Row="1" ItemsSource="{x:Bind Processes}">
+            <Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click"/>
+            <Button x:Name="KillButton" Content="End Task" Click="KillButton_Click"/>
+        </StackPanel>
+
+        <ListView x:Name="ProcessListView" Grid.Row="1" ItemsSource="{x:Bind Processes}">
 			<ListView.HeaderTemplate>
 				<DataTemplate>
 					<Grid>

@@ -15,45 +15,48 @@ using Windows.Foundation.Collections;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
-
 namespace TaskManager
 {
-    /// <summary>
-    /// Main window that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class MainWindow : Window
     {
         private DispatcherTimer _refreshTimer;
         private readonly ProcessService _service = new();
         public ObservableCollection<ProcessItem> Processes { get; } = new();
+        private string _filterText = string.Empty; 
 
         public MainWindow()
         {
             this.InitializeComponent();
-            _ = RefreshDataAsync(); // Initial load
+
             _refreshTimer = new DispatcherTimer();
             _refreshTimer.Interval = TimeSpan.FromSeconds(2);
             _refreshTimer.Tick += async (s, e) => await RefreshDataAsync();
             _refreshTimer.Start();
 
-            _ = RefreshDataAsync();
+            _ = RefreshDataAsync(); 
         }
 
-        private async void RefreshButton_Click(object sender, RoutedEventArgs e)
+        private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await RefreshDataAsync();
+
+        private async void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
+            _filterText = (sender as TextBox)?.Text ?? string.Empty;
             await RefreshDataAsync();
         }
 
         private async Task RefreshDataAsync()
         {
-            var data = await Task.Run(() => _service.GetProcesses());
+            var allData = await Task.Run(() => _service.GetProcesses());
+
+            var filteredData = allData.Where(p =>
+                string.IsNullOrEmpty(_filterText) ||
+                p.Name.Contains(_filterText, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
 
             int? selectedId = (ProcessListView.SelectedItem as ProcessItem)?.Id;
 
             Processes.Clear();
-            foreach (var item in data)
+            foreach (var item in filteredData)
             {
                 Processes.Add(item);
             }
@@ -61,26 +64,17 @@ namespace TaskManager
             if (selectedId.HasValue)
             {
                 var itemToSelect = Processes.FirstOrDefault(p => p.Id == selectedId.Value);
-                if (itemToSelect != null)
-                {
-                    ProcessListView.SelectedItem = itemToSelect;
-                }
+                if (itemToSelect != null) ProcessListView.SelectedItem = itemToSelect;
             }
         }
-
-
 
         private void KillButton_Click(object sender, RoutedEventArgs e)
         {
             if (ProcessListView.SelectedItem is ProcessItem selected)
             {
-                if (_service.KillProcess(selected.Id))
-                {
-                    _ = RefreshDataAsync(); // Refresh after success
-                }
+                if (_service.KillProcess(selected.Id)) _ = RefreshDataAsync();
             }
         }
     }
 }
-
 
