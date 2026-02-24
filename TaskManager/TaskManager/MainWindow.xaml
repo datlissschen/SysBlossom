@@ -29,31 +29,28 @@
             <Button x:Name="KillButton" Content="End Task" Click="KillButton_Click"/>
         </StackPanel>
 
-        <ListView x:Name="ProcessListView" Grid.Row="1" ItemsSource="{x:Bind Processes}">
-			<ListView.HeaderTemplate>
-				<DataTemplate>
-					<Grid>
-						<Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="250"/>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="150"/>
-                            <ColumnDefinition Width="150"/>
-							<ColumnDefinition Width="150"/>
-						</Grid.ColumnDefinitions>
-                        <StackPanel Orientation="Horizontal" Grid.Column="0" Spacing="10">
-                            <Image Source="{x:Bind Icon}" Width="20" Height="20" VerticalAlignment="Center"/>
-                            <TextBlock Text="{x:Bind Name}" FontWeight="Bold" VerticalAlignment="Center"/>
-                        </StackPanel>
 
+        <ListView x:Name="ProcessListView" Grid.Row="1" ItemsSource="{x:Bind Processes}">
+            <ListView.HeaderTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="300"/>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="150"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Process Name" FontWeight="Bold" Grid.Column="0"/>
                         <TextBlock Text="CPU" FontWeight="Bold" Grid.Column="1"/>
                         <TextBlock Text="Memory" FontWeight="Bold" Grid.Column="2"/>
-						<TextBlock Text="Status" FontWeight="Bold" Grid.Column="3"/>
-					</Grid>
-				</DataTemplate>
-			</ListView.HeaderTemplate>
-			<ListView.ItemTemplate>
-				<DataTemplate x:DataType="local:ProcessItem">
-					<Grid>
+                        <TextBlock Text="Status" FontWeight="Bold" Grid.Column="3"/>
+                    </Grid>
+                </DataTemplate>
+            </ListView.HeaderTemplate>
+
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="local:ProcessItem">
+                    <Grid Height="40">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="300"/>
                             <ColumnDefinition Width="150"/>
@@ -61,13 +58,20 @@
                             <ColumnDefinition Width="150"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Text="{x:Bind Name}" Grid.Column="0"/>
-                        <TextBlock Text="{x:Bind CpuUsageDisplay}" Grid.Column="1"/>
-                        <TextBlock Text="{x:Bind MemoryUsage}" Grid.Column="2"/>
-                        <TextBlock Text="{x:Bind Status}" Grid.Column="3"/>
+                        <StackPanel Orientation="Horizontal" Grid.Column="0" Spacing="10">
+                            <Image Source="{x:Bind IconSource, Mode=OneWay}" 
+                           Width="24" Height="24" 
+                           VerticalAlignment="Center"/>
+                            <TextBlock Text="{x:Bind Name}" 
+                               VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <TextBlock Text="{x:Bind CpuUsageDisplay}" Grid.Column="1" VerticalAlignment="Center"/>
+                        <TextBlock Text="{x:Bind MemoryUsage}" Grid.Column="2" VerticalAlignment="Center"/>
+                        <TextBlock Text="{x:Bind Status}" Grid.Column="3" VerticalAlignment="Center"/>
                     </Grid>
-				</DataTemplate>
-			</ListView.ItemTemplate>
-		</ListView>
-	</Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
 </Window>
