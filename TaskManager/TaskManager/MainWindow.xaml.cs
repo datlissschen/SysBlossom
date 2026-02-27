@@ -45,59 +45,65 @@ namespace TaskManager
             await RefreshDataAsync();
         }
 
+        /// <summary>
+        /// Method loads the data, filters it and then adds them, loading their icons if possible.
+        /// </summary>
+        /// <returns></returns>
         private async Task RefreshDataAsync()
         {
+            //  Get the raw data on a background thread
             var allData = await Task.Run(() => _service.GetProcesses());
 
+            // Filter it
             var filteredData = allData.Where(p =>
                 string.IsNullOrEmpty(_filterText) ||
                 p.Name.Contains(_filterText, StringComparison.OrdinalIgnoreCase)
             ).ToList();
 
-            int? selectedId = (ProcessListView.SelectedItem as ProcessItem)?.Id;
-
+            // Update the collection
             Processes.Clear();
             foreach (var item in filteredData)
             {
                 Processes.Add(item);
+            }
 
-                if (!string.IsNullOrEmpty(item.ImagePath))
+            // Load Icons 
+            _ = Task.Run(async () =>
+            {
+                foreach (var item in filteredData)
                 {
-                    // Check Cache
-                    if (IconCache.TryGetIcon(item.ImagePath, out var cachedIcon))
+                    if (!string.IsNullOrEmpty(item.ImagePath) && item.IconSource == null)
                     {
-                        item.IconSource = cachedIcon;
-                    }
-                    else
-                    {
-                        // Only extract if not found in cache
-                        try
+                        // Check cache first
+                        if (IconCache.TryGetIcon(item.ImagePath, out var cachedIcon))
                         {
-                            if (System.IO.File.Exists(item.ImagePath))
+                            // Update UI property on UI Thread
+                            DispatcherQueue.TryEnqueue(() => { item.IconSource = cachedIcon; });
+                        }
+                        else
+                        {
+                            try
                             {
-                                using var icon = System.Drawing.Icon.ExtractAssociatedIcon(item.ImagePath);
-                                if (icon != null)
+                                if (System.IO.File.Exists(item.ImagePath))
                                 {
-                                    var bitmapSource = await IconHelper.GetWinUI3BitmapSourceFromIcon(icon);
+                                    using var icon = System.Drawing.Icon.ExtractAssociatedIcon(item.ImagePath);
+                                    if (icon != null)
+                                    {
+                                        // Helper conversion
+                                        var bitmapSource = await IconHelper.GetWinUI3BitmapSourceFromIcon(icon);
+                                        IconCache.AddIcon(item.ImagePath, bitmapSource);
 
-                                    // Add to Cache for next time
-                                    IconCache.AddIcon(item.ImagePath, bitmapSource);
-                                    item.IconSource = bitmapSource;
+                                        // Update UI property on UI Thread
+                                        DispatcherQueue.TryEnqueue(() => { item.IconSource = bitmapSource; });
+                                    }
                                 }
                             }
+                            catch { /* Ignore icon errors */ }
                         }
-                        catch { /* Skip errors */ }
                     }
                 }
-            }
-
-            if (selectedId.HasValue)
-            {
-                var itemToSelect = Processes.FirstOrDefault(p => p.Id == selectedId.Value);
-                if (itemToSelect != null) ProcessListView.SelectedItem = itemToSelect;
-            }
+            });
         }
-
         private void KillButton_Click(object sender, RoutedEventArgs e)
         {
             if (ProcessListView.SelectedItem is ProcessItem selected)

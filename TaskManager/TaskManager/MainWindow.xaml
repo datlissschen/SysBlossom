@@ -30,7 +30,9 @@
         </StackPanel>
 
 
-        <ListView x:Name="ProcessListView" Grid.Row="1" ItemsSource="{x:Bind Processes}">
+        <ListView x:Name="ProcessListView" 
+          Grid.Row="1" 
+          ItemsSource="{x:Bind Processes, Mode=OneWay}">
             <ListView.HeaderTemplate>
                 <DataTemplate>
                     <Grid>
