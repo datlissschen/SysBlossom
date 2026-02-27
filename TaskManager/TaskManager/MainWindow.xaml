@@ -60,12 +60,15 @@
                             <ColumnDefinition Width="150"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Orientation="Horizontal" Grid.Column="0" Spacing="10">
+                        <StackPanel Orientation="Horizontal" Grid.Column="0" Spacing="12" VerticalAlignment="Center">
                             <Image Source="{x:Bind IconSource, Mode=OneWay}" 
-                           Width="24" Height="24" 
-                           VerticalAlignment="Center"/>
-                            <TextBlock Text="{x:Bind Name}" 
+                               Width="24" 
+                               Height="24" 
+                               Stretch="Uniform"
                                VerticalAlignment="Center"/>
+                            <TextBlock Text="{x:Bind Name}" 
+                               VerticalAlignment="Center" 
+                               FontSize="14"/>      
                         </StackPanel>
 
                         <TextBlock Text="{x:Bind CpuUsageDisplay}" Grid.Column="1" VerticalAlignment="Center"/>
