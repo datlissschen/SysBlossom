@@ -16,6 +16,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using System.Text.RegularExpressions;
 
 namespace TaskManager
 {
@@ -58,59 +59,78 @@ namespace TaskManager
         /// <returns>A task that represents the asynchronous refresh operation.</returns>
         private async Task RefreshDataAsync()
         {
-            // 1. Fetch and sort data in the background
             var allData = await Task.Run(() => _service.GetProcesses());
 
-            // Filter and Sort 
+            // Filter
             var filteredData = allData.Where(p =>
                 string.IsNullOrEmpty(_filterText) ||
                 p.Name.Contains(_filterText, StringComparison.OrdinalIgnoreCase));
 
-            // Apply Sorting 
-            var sortedList = filteredData.OrderByDescending(p => p.CpuUsage).ToList();
+            // APPLY DYNAMIC SORTING
+            IEnumerable<ProcessItem> sortedQuery;
+            switch (_sortColumn)
+            {
+                case "Name":
+                    sortedQuery = _isAscending ? filteredData.OrderBy(p => p.Name) : filteredData.OrderByDescending(p => p.Name);
+                    break;
+                case "Memory":
+                    sortedQuery = _isAscending ? filteredData.OrderBy(p => ParseMemory(p.MemoryUsage)) : filteredData.OrderByDescending(p => ParseMemory(p.MemoryUsage));
+                    break;
+                case "Status":
+                    sortedQuery = _isAscending ? filteredData.OrderBy(p => p.Status) : filteredData.OrderByDescending(p => p.Status);
+                    break;
+                default: // CPU
+                    sortedQuery = _isAscending ? filteredData.OrderBy(p => p.CpuUsage) : filteredData.OrderByDescending(p => p.CpuUsage);
+                    break;
+            }
+            var sortedList = sortedQuery.ToList();
 
-            // 2. SYNC LOGIC 
+            // SAVE SELECTION
+            var selectedIds = ProcessListView.SelectedItems
+                .Cast<ProcessItem>()
+                .Select(p => p.Id)
+                .ToList();
 
-            // Create a dictionary of current items for fast lookup
+            // YNC LOGIC (In-place update)
             var currentItems = Processes.ToDictionary(p => p.Id);
             var newIds = sortedList.Select(p => p.Id).ToHashSet();
 
-            // A. Remove processes that are no longer running
+            // Remove old
             for (int i = Processes.Count - 1; i >= 0; i--)
             {
-                if (!newIds.Contains(Processes[i].Id))
-                {
-                    Processes.RemoveAt(i);
-                }
+                if (!newIds.Contains(Processes[i].Id)) Processes.RemoveAt(i);
             }
 
-            // B. Update existing items or Add new ones
+            // Update/Move/Add
             for (int i = 0; i < sortedList.Count; i++)
             {
                 var newItem = sortedList[i];
-
                 if (currentItems.TryGetValue(newItem.Id, out var existingItem))
                 {
-                    // Update the data (INotifyPropertyChanged handles the UI refresh)
                     existingItem.CpuUsage = newItem.CpuUsage;
                     existingItem.MemoryUsage = newItem.MemoryUsage;
                     existingItem.Status = newItem.Status;
 
-                    // Handle sorting: If the item moved position, move it in the collection
                     int oldIndex = Processes.IndexOf(existingItem);
-                    if (oldIndex != i)
-                    {
-                        Processes.Move(oldIndex, i);
-                    }
+                    if (oldIndex != i) Processes.Move(oldIndex, i);
                 }
                 else
                 {
-                    // Item is brand new, insert it at the correct sorted position
                     Processes.Insert(i, newItem);
                 }
             }
 
-            // 3. Kick off icon loading for new items only
+            // clear and re-add only if the selection actually changed or items moved
+            ProcessListView.SelectedItems.Clear();
+            foreach (var id in selectedIds)
+            {
+                var itemToReselect = Processes.FirstOrDefault(p => p.Id == id);
+                if (itemToReselect != null)
+                {
+                    ProcessListView.SelectedItems.Add(itemToReselect);
+                }
+            }
+
             _ = LoadIconsInBackground(sortedList);
         }
 
@@ -175,9 +195,26 @@ namespace TaskManager
         /// <param name="e">The event data associated with the click event, providing additional information about the event.</param>
         private void KillButton_Click(object sender, RoutedEventArgs e)
         {
-            if (ProcessListView.SelectedItem is ProcessItem selected)
+            // Get all selected items
+            var selectedProcesses = ProcessListView.SelectedItems.Cast<ProcessItem>().ToList();
+
+            if (selectedProcesses.Count == 0) return;
+
+            // loop and kill
+            bool atLeastOneKilled = false;
+
+            foreach (var process in selectedProcesses)
             {
-                if (_service.KillProcess(selected.Id)) _ = RefreshDataAsync();
+                if (_service.KillProcess(process.Id))
+                {
+                    atLeastOneKilled = true;
+                }
+            }
+
+            // Refresh the list if we actually closed something
+            if (atLeastOneKilled)
+            {
+                _ = RefreshDataAsync();
             }
         }
 
