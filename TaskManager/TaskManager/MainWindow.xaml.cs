@@ -21,6 +21,8 @@ namespace TaskManager
 {
     public sealed partial class MainWindow : Window
     {
+        private string _sortColumn = "CPU"; // Default sort
+        private bool _isAscending = false;   // Default to highest CPU first
         private DispatcherTimer _refreshTimer;
         private readonly ProcessService _service = new();
         public ObservableCollection<ProcessItem> Processes { get; } = new();
@@ -56,36 +58,58 @@ namespace TaskManager
         /// <returns>A task that represents the asynchronous refresh operation.</returns>
         private async Task RefreshDataAsync()
         {
-            // 1. Get the process data (Background Thread)
             var allData = await Task.Run(() => _service.GetProcesses());
 
-            // 2. Filter (Background Thread)
+            // Filter
             var filteredData = allData.Where(p =>
                 string.IsNullOrEmpty(_filterText) ||
                 p.Name.Contains(_filterText, StringComparison.OrdinalIgnoreCase)
-            ).ToList();
+            );
 
-            // 3. Update the List (UI Thread) - Fast & Minimal
-            // We update existing items instead of Clear/Add to prevent scroll-jump
-            if (Processes.Count != filteredData.Count)
+            // Sort based on user selection
+            IOrderedEnumerable<ProcessItem> sortedData;
+
+            switch (_sortColumn)
             {
-                Processes.Clear();
-                foreach (var item in filteredData) Processes.Add(item);
-            }
-            else
-            {
-                for (int i = 0; i < filteredData.Count; i++)
-                {
-                    Processes[i].CpuUsage = filteredData[i].CpuUsage;
-                    Processes[i].MemoryUsage = filteredData[i].MemoryUsage;
-                    Processes[i].Status = filteredData[i].Status;
-                }
+                case "Name":
+                    sortedData = _isAscending ? filteredData.OrderBy(p => p.Name) : filteredData.OrderByDescending(p => p.Name);
+                    break;
+                case "Memory":
+                    // parse the string "150 MB" back to a number for correct numerical sorting
+                    sortedData = _isAscending ? filteredData.OrderBy(p => ParseMemory(p.MemoryUsage)) : filteredData.OrderByDescending(p => ParseMemory(p.MemoryUsage));
+                    break;
+                case "Status":
+                    sortedData = _isAscending ? filteredData.OrderBy(p => p.Status) : filteredData.OrderByDescending(p => p.Status);
+                    break;
+                case "CPU":
+                default:
+                    sortedData = _isAscending ? filteredData.OrderBy(p => p.CpuUsage) : filteredData.OrderByDescending(p => p.CpuUsage);
+                    break;
             }
 
-            // 4. Fire-and-forget the icon loader (Doesn't block the list)
-            _ = LoadIconsInBackground(filteredData);
+            var finalData = sortedData.ToList();
+
+            // Update UI Collection (On UI Thread)
+            Processes.Clear();
+            foreach (var item in finalData)
+            {
+                Processes.Add(item);
+            }
+
+            _ = LoadIconsInBackground(finalData);
         }
 
+        /// <summary>
+        /// Helper to turn "150 MB" into 150 for sorting
+        /// </summary>
+        /// <param name="memString"></param>
+        /// <returns></returns>
+        private long ParseMemory(string memString)
+        {
+            if (long.TryParse(System.Text.RegularExpressions.Regex.Match(memString, @"\d+").Value, out long result))
+                return result;
+            return 0;
+        }
         private async Task LoadIconsInBackground(List<ProcessItem> items)
         {
             foreach (var item in items)
@@ -139,6 +163,30 @@ namespace TaskManager
             if (ProcessListView.SelectedItem is ProcessItem selected)
             {
                 if (_service.KillProcess(selected.Id)) _ = RefreshDataAsync();
+            }
+        }
+
+        /// <summary>
+        /// Click handler for the columns.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void Header_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string column)
+            {
+                // If clicking the same column, flip the direction. Otherwise, set to Descending.
+                if (_sortColumn == column)
+                {
+                    _isAscending = !_isAscending;
+                }
+                else
+                {
+                    _sortColumn = column;
+                    _isAscending = false;
+                }
+
+                await RefreshDataAsync();
             }
         }
     }

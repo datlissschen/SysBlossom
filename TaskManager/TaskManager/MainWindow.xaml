@@ -42,10 +42,11 @@
                             <ColumnDefinition Width="150"/>
                             <ColumnDefinition Width="150"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Process Name" FontWeight="Bold" Grid.Column="0"/>
-                        <TextBlock Text="CPU" FontWeight="Bold" Grid.Column="1"/>
-                        <TextBlock Text="Memory" FontWeight="Bold" Grid.Column="2"/>
-                        <TextBlock Text="Status" FontWeight="Bold" Grid.Column="3"/>
+
+                        <Button Content="Process Name" Click="Header_Click" Tag="Name" Grid.Column="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent" BorderThickness="0" FontWeight="Bold"/>
+                        <Button Content="CPU" Click="Header_Click" Tag="CPU" Grid.Column="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent" BorderThickness="0" FontWeight="Bold"/>
+                        <Button Content="Memory" Click="Header_Click" Tag="Memory" Grid.Column="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent" BorderThickness="0" FontWeight="Bold"/>
+                        <Button Content="Status" Click="Header_Click" Tag="Status" Grid.Column="3" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent" BorderThickness="0" FontWeight="Bold"/>
                     </Grid>
                 </DataTemplate>
             </ListView.HeaderTemplate>
