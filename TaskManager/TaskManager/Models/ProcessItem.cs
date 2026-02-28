@@ -1,6 +1,7 @@
+using Microsoft.UI.Xaml.Media;
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using Microsoft.UI.Xaml.Media;
 
 namespace TaskManager
 {
@@ -23,10 +24,21 @@ namespace TaskManager
         }
 
         private double _cpuUsage;
+
+        /// <summary>
+        /// method triggers the change of the CPU usage and notifies the UI to update the display.
+        /// </summary>
         public double CpuUsage
         {
             get => _cpuUsage;
-            set { _cpuUsage = value; OnPropertyChanged(); OnPropertyChanged(nameof(CpuUsageDisplay)); }
+            set
+            {
+                // Only notify if the change is significant (> 0.1%)
+                if (Math.Abs(_cpuUsage - value) < 0.1) return;
+                _cpuUsage = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(CpuUsageDisplay));
+            }
         }
 
         private ImageSource? _iconSource;
@@ -35,5 +47,7 @@ namespace TaskManager
             get => _iconSource;
             set { _iconSource = value; OnPropertyChanged(); }
         }
+
+
     }
 }

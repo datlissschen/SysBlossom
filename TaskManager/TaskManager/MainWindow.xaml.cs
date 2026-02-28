@@ -7,16 +7,17 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
-using System.Text.RegularExpressions;
 
 namespace TaskManager
 {
@@ -27,7 +28,9 @@ namespace TaskManager
         private DispatcherTimer _refreshTimer;
         private readonly ProcessService _service = new();
         public ObservableCollection<ProcessItem> Processes { get; } = new();
-        private string _filterText = string.Empty; 
+        private string _filterText = string.Empty;
+        // queue for icons
+        private readonly ConcurrentQueue<ProcessItem> _iconQueue = new();
 
         public MainWindow()
         {
@@ -36,9 +39,50 @@ namespace TaskManager
             _refreshTimer = new DispatcherTimer();
             _refreshTimer.Interval = TimeSpan.FromSeconds(2);
             _refreshTimer.Tick += async (s, e) => await RefreshDataAsync();
-            _refreshTimer.Start();
 
-            _ = RefreshDataAsync(); 
+            // START ONE THROTTLED ICON WORKER
+            _ = StartIconWorker();
+
+            _refreshTimer.Start();
+            _ = RefreshDataAsync();
+        }
+
+        /// <summary>
+        /// Worker method for the icons.
+        /// </summary>
+        /// <returns></returns>
+        private async Task StartIconWorker()
+        {
+            while (true)
+            {
+                if (_iconQueue.TryDequeue(out var item))
+                {
+                    try
+                    {
+                        if (!string.IsNullOrEmpty(item.ImagePath) && File.Exists(item.ImagePath))
+                        {
+                            using var icon = System.Drawing.Icon.ExtractAssociatedIcon(item.ImagePath);
+                            if (icon != null)
+                            {
+                                var softwareBitmap = IconHelper.GetSoftwareBitmapFromIcon(icon);
+                                DispatcherQueue.TryEnqueue(async () =>
+                                {
+                                    var bitmapSource = new SoftwareBitmapSource();
+                                    await bitmapSource.SetBitmapAsync(softwareBitmap);
+                                    IconCache.AddIcon(item.ImagePath!, bitmapSource);
+                                    item.IconSource = bitmapSource;
+                                });
+                            }
+                        }
+                    }
+                    catch { /* Skip stubborn files */ }
+                    await Task.Delay(50); // The "Breathe" delay for the CPU
+                }
+                else
+                {
+                    await Task.Delay(500); // Wait longer if queue is empty
+                }
+            }
         }
 
         private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await RefreshDataAsync();
@@ -117,6 +161,12 @@ namespace TaskManager
                 else
                 {
                     Processes.Insert(i, newItem);
+
+                    // Only queue the icon if it's not already cached
+                    if (!string.IsNullOrEmpty(newItem.ImagePath) && !IconCache.TryGetIcon(newItem.ImagePath, out _))
+                    {
+                        _iconQueue.Enqueue(newItem);
+                    }
                 }
             }
 

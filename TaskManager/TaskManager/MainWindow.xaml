@@ -12,28 +12,27 @@
     <Window.SystemBackdrop>
         <MicaBackdrop />
     </Window.SystemBackdrop>
-	
-	<Grid Margin="20">
-		<Grid.RowDefinitions>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="*"/>
-		</Grid.RowDefinitions>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
         <StackPanel Orientation="Horizontal" Spacing="10" Grid.Row="0" Margin="0,0,0,10">
             <TextBox x:Name="SearchBox" 
-             PlaceholderText="🔍 Search processes..." 
-             Width="250" 
-             TextChanged="SearchBox_TextChanged"/>
-
+                 PlaceholderText="🔍 Search processes..." 
+                 Width="250" 
+                 TextChanged="SearchBox_TextChanged"/>
             <Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click"/>
             <Button x:Name="KillButton" Content="End Task" Click="KillButton_Click"/>
         </StackPanel>
-
 
         <ListView x:Name="ProcessListView" 
           Grid.Row="1" 
           ItemsSource="{x:Bind Processes, Mode=OneWay}"
           SelectionMode="Extended">
+
             <ListView.HeaderTemplate>
                 <DataTemplate>
                     <Grid>
@@ -43,11 +42,10 @@
                             <ColumnDefinition Width="150"/>
                             <ColumnDefinition Width="150"/>
                         </Grid.ColumnDefinitions>
-
-                        <Button Content="Process Name" Click="Header_Click" Tag="Name" Grid.Column="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent" BorderThickness="0" FontWeight="Bold"/>
-                        <Button Content="CPU" Click="Header_Click" Tag="CPU" Grid.Column="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent" BorderThickness="0" FontWeight="Bold"/>
-                        <Button Content="Memory" Click="Header_Click" Tag="Memory" Grid.Column="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent" BorderThickness="0" FontWeight="Bold"/>
-                        <Button Content="Status" Click="Header_Click" Tag="Status" Grid.Column="3" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent" BorderThickness="0" FontWeight="Bold"/>
+                        <TextBlock Text="Process Name" FontWeight="Bold" Grid.Column="0"/>
+                        <TextBlock Text="CPU" FontWeight="Bold" Grid.Column="1"/>
+                        <TextBlock Text="Memory" FontWeight="Bold" Grid.Column="2"/>
+                        <TextBlock Text="Status" FontWeight="Bold" Grid.Column="3"/>
                     </Grid>
                 </DataTemplate>
             </ListView.HeaderTemplate>
@@ -62,20 +60,14 @@
                             <ColumnDefinition Width="150"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Orientation="Horizontal" Grid.Column="0" Spacing="12" VerticalAlignment="Center">
-                            <Image Source="{x:Bind IconSource, Mode=OneWay}" 
-                               Width="24" 
-                               Height="24" 
-                               Stretch="Uniform"
-                               VerticalAlignment="Center"/>
-                            <TextBlock Text="{x:Bind Name}" 
-                               VerticalAlignment="Center" 
-                               FontSize="14"/>      
+                        <StackPanel Orientation="Horizontal" Grid.Column="0" Spacing="12">
+                            <Image Source="{x:Bind IconSource, Mode=OneWay}" Width="24" Height="24" Stretch="Uniform" VerticalAlignment="Center"/>
+                            <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" FontSize="14"/>
                         </StackPanel>
 
-                        <TextBlock Text="{x:Bind CpuUsageDisplay}" Grid.Column="1" VerticalAlignment="Center"/>
-                        <TextBlock Text="{x:Bind MemoryUsage}" Grid.Column="2" VerticalAlignment="Center"/>
-                        <TextBlock Text="{x:Bind Status}" Grid.Column="3" VerticalAlignment="Center"/>
+                        <TextBlock Text="{x:Bind CpuUsageDisplay, Mode=OneWay}" Grid.Column="1" VerticalAlignment="Center"/>
+                        <TextBlock Text="{x:Bind MemoryUsage, Mode=OneWay}" Grid.Column="2" VerticalAlignment="Center"/>
+                        <TextBlock Text="{x:Bind Status, Mode=OneWay}" Grid.Column="3" VerticalAlignment="Center"/>
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
