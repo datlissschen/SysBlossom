@@ -11,7 +11,11 @@ namespace TaskManager
 {
     public static class IconHelper
     {
-        // This method now returns the raw SoftwareBitmap so the UI thread can wrap it
+        /// <summary>
+        /// This method now returns the raw SoftwareBitmap so the UI thread can wrap it
+        /// </summary>
+        /// <param name="icon"></param>
+        /// <returns></returns>
         public static SoftwareBitmap GetSoftwareBitmapFromIcon(Icon icon)
         {
             using var bitmap = icon.ToBitmap();
