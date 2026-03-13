@@ -37,6 +37,13 @@ namespace TaskManager
             InitializeComponent();
         }
 
+        /*
+        private void InitializeComponent()
+        {
+            throw new NotImplementedException();
+        }
+        */
+
         /// <summary>
         /// Invoked when the application is launched.
         /// </summary>
