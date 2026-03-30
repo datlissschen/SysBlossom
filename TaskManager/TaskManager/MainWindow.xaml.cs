@@ -57,30 +57,38 @@ namespace TaskManager
             {
                 if (_iconQueue.TryDequeue(out var item))
                 {
-                    try
+                    // load only if no Icon in Cache
+                    if (item.IconSource == null && !string.IsNullOrEmpty(item.ImagePath))
                     {
-                        if (!string.IsNullOrEmpty(item.ImagePath) && File.Exists(item.ImagePath))
+                        await Task.Run(() => 
                         {
-                            using var icon = System.Drawing.Icon.ExtractAssociatedIcon(item.ImagePath);
-                            if (icon != null)
+                            try
                             {
-                                var softwareBitmap = IconHelper.GetSoftwareBitmapFromIcon(icon);
-                                DispatcherQueue.TryEnqueue(async () =>
+                                if (File.Exists(item.ImagePath))
                                 {
-                                    var bitmapSource = new SoftwareBitmapSource();
-                                    await bitmapSource.SetBitmapAsync(softwareBitmap);
-                                    IconCache.AddIcon(item.ImagePath!, bitmapSource);
-                                    item.IconSource = bitmapSource;
-                                });
+                                    using var icon = System.Drawing.Icon.ExtractAssociatedIcon(item.ImagePath);
+                                    if (icon != null)
+                                    {
+                                        var softwareBitmap = IconHelper.GetSoftwareBitmapFromIcon(icon);
+
+                                        // assign UI thread
+                                        DispatcherQueue.TryEnqueue(async () =>
+                                        {
+                                            var bitmapSource = new SoftwareBitmapSource();
+                                            await bitmapSource.SetBitmapAsync(softwareBitmap);
+                                            item.IconSource = bitmapSource;
+                                        });
+                                    }
+                                }
                             }
-                        }
+                            catch { /* ignore catc */ }
+                        });
                     }
-                    catch { /* Skip stubborn files */ }
-                    await Task.Delay(50); // The "Breathe" delay for the CPU
+                    await Task.Delay(30); 
                 }
                 else
                 {
-                    await Task.Delay(500); // Wait longer if queue is empty
+                    await Task.Delay(500); 
                 }
             }
         }
