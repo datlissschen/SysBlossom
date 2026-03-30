@@ -181,7 +181,6 @@ namespace TaskManager
                 }
             }
 
-            _ = LoadIconsInBackground(sortedList);
         }
 
         /// <summary>
@@ -194,46 +193,6 @@ namespace TaskManager
             if (long.TryParse(System.Text.RegularExpressions.Regex.Match(memString, @"\d+").Value, out long result))
                 return result;
             return 0;
-        }
-        private async Task LoadIconsInBackground(List<ProcessItem> items)
-        {
-            foreach (var item in items)
-            {
-                if (string.IsNullOrEmpty(item.ImagePath) || item.IconSource != null) continue;
-
-                // Check Cache first (Instant)
-                if (IconCache.TryGetIcon(item.ImagePath, out var cachedIcon))
-                {
-                    item.IconSource = cachedIcon;
-                    continue;
-                }
-
-                // Only do the heavy lifting for a few icons per second to prevent "choke"
-                await Task.Run(async () =>
-                {
-                    try
-                    {
-                        if (System.IO.File.Exists(item.ImagePath))
-                        {
-                            using var icon = System.Drawing.Icon.ExtractAssociatedIcon(item.ImagePath);
-                            if (icon != null)
-                            {
-                                var softwareBitmap = IconHelper.GetSoftwareBitmapFromIcon(icon);
-
-                                // Hand back to UI thread ONLY for the final display step
-                                DispatcherQueue.TryEnqueue(async () =>
-                                {
-                                    var bitmapSource = new Microsoft.UI.Xaml.Media.Imaging.SoftwareBitmapSource();
-                                    await bitmapSource.SetBitmapAsync(softwareBitmap);
-                                    IconCache.AddIcon(item.ImagePath!, bitmapSource);
-                                    item.IconSource = bitmapSource;
-                                });
-                            }
-                        }
-                    }
-                    catch { /* Skip stubborn files */ }
-                });
-            }
         }
 
         /// <summary>
