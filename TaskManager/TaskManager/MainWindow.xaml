@@ -16,22 +16,44 @@
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="100"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <StackPanel Orientation="Horizontal" Spacing="10" Grid.Row="0" Margin="0,0,0,10">
             <TextBox x:Name="SearchBox" 
-                 PlaceholderText="🔍 Search processes..." 
-                 Width="250" 
-                 TextChanged="SearchBox_TextChanged"/>
+                     PlaceholderText="🔍 Search processes..." 
+                     Width="250" 
+                     TextChanged="SearchBox_TextChanged"/>
             <Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click"/>
             <Button x:Name="KillButton" Content="End Task" Click="KillButton_Click"/>
         </StackPanel>
 
+        <Grid Grid.Row="1" Margin="0,10,0,10" Background="{ThemeResource SystemControlBackgroundAltHighBrush}" CornerRadius="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Margin="10">
+                <TextBlock Text="Total CPU Usage" FontSize="12" Foreground="LightSkyBlue" FontWeight="Bold"/>
+                <Canvas Height="60" VerticalAlignment="Bottom">
+                    <Polyline x:Name="CpuGraphLine" Stroke="LightSkyBlue" StrokeThickness="2" Points="0,60 0,60"/>
+                </Canvas>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Margin="10">
+                <TextBlock Text="Total RAM Usage" FontSize="12" Foreground="LightPink" FontWeight="Bold"/>
+                <Canvas Height="60" VerticalAlignment="Bottom">
+                    <Polyline x:Name="RamGraphLine" Stroke="LightPink" StrokeThickness="2" Points="0,60 0,60"/>
+                </Canvas>
+            </StackPanel>
+        </Grid>
+
         <ListView x:Name="ProcessListView" 
-          Grid.Row="1" 
-          ItemsSource="{x:Bind Processes, Mode=OneWay}"
-          SelectionMode="Extended">
+                  Grid.Row="2" 
+                  ItemsSource="{x:Bind Processes, Mode=OneWay}"
+                  SelectionMode="Extended">
 
             <ListView.HeaderTemplate>
                 <DataTemplate>
