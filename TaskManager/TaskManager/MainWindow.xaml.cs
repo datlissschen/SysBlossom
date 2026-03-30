@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
+using Microsoft.UI.Xaml.Shapes;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -31,6 +32,11 @@ namespace TaskManager
         private string _filterText = string.Empty;
         // queue for icons
         private readonly ConcurrentQueue<ProcessItem> _iconQueue = new();
+
+
+        private readonly List<double> _cpuHistory = new();
+        private readonly List<double> _ramHistory = new();
+        private const int MaxPoints = 50; // amount of points to show in the graph
 
         public MainWindow()
         {
@@ -188,7 +194,40 @@ namespace TaskManager
                     ProcessListView.SelectedItems.Add(itemToReselect);
                 }
             }
+            // get data
+            double totalCpu = sortedList.Sum(p => p.CpuUsage);
+            double totalRam = sortedList.Sum(p => ParseMemory(p.MemoryUsage));
 
+            // update graph on UI Thread
+            UpdateGraph(CpuGraphLine, _cpuHistory, totalCpu, 100); // 100% Max
+            UpdateGraph(RamGraphLine, _ramHistory, totalRam, 32000); // Beispiel 32GB Max
+
+        }
+
+        /// <summary>
+        /// helper for drawing the graph. It takes the new value, adds it to the history, and updates the Polyline points accordingly.
+        /// </summary>
+        /// <param name="line"></param>
+        /// <param name="history"></param>
+        /// <param name="newValue"></param>
+        /// <param name="max"></param>
+        private void UpdateGraph(Polyline line, List<double> history, double newValue, double max)
+        {
+            history.Add(newValue);
+            if (history.Count > MaxPoints) history.RemoveAt(0);
+
+            var points = new PointCollection();
+            double width = 400; // width of the graph
+            double height = 60; // height of the graph
+            double stepX = width / MaxPoints;
+
+            for (int i = 0; i < history.Count; i++)
+            {
+                double y = height - (history[i] / max * height);
+                y = Math.Clamp(y, 0, height);
+                points.Add(new Windows.Foundation.Point(i * stepX, y));
+            }
+            line.Points = points;
         }
 
         /// <summary>
