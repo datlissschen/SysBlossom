@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
+using Microsoft.UI.Xaml.Shapes;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -32,6 +33,11 @@ namespace TaskManager
         // queue for icons
         private readonly ConcurrentQueue<ProcessItem> _iconQueue = new();
 
+
+        private readonly List<double> _cpuHistory = new();
+        private readonly List<double> _ramHistory = new();
+        private const int MaxPoints = 50; // amount of points to show in the graph
+
         public MainWindow()
         {
             this.InitializeComponent();
@@ -57,30 +63,38 @@ namespace TaskManager
             {
                 if (_iconQueue.TryDequeue(out var item))
                 {
-                    try
+                    // load only if no Icon in Cache
+                    if (item.IconSource == null && !string.IsNullOrEmpty(item.ImagePath))
                     {
-                        if (!string.IsNullOrEmpty(item.ImagePath) && File.Exists(item.ImagePath))
+                        await Task.Run(() => 
                         {
-                            using var icon = System.Drawing.Icon.ExtractAssociatedIcon(item.ImagePath);
-                            if (icon != null)
+                            try
                             {
-                                var softwareBitmap = IconHelper.GetSoftwareBitmapFromIcon(icon);
-                                DispatcherQueue.TryEnqueue(async () =>
+                                if (File.Exists(item.ImagePath))
                                 {
-                                    var bitmapSource = new SoftwareBitmapSource();
-                                    await bitmapSource.SetBitmapAsync(softwareBitmap);
-                                    IconCache.AddIcon(item.ImagePath!, bitmapSource);
-                                    item.IconSource = bitmapSource;
-                                });
+                                    using var icon = System.Drawing.Icon.ExtractAssociatedIcon(item.ImagePath);
+                                    if (icon != null)
+                                    {
+                                        var softwareBitmap = IconHelper.GetSoftwareBitmapFromIcon(icon);
+
+                                        // assign UI thread
+                                        DispatcherQueue.TryEnqueue(async () =>
+                                        {
+                                            var bitmapSource = new SoftwareBitmapSource();
+                                            await bitmapSource.SetBitmapAsync(softwareBitmap);
+                                            item.IconSource = bitmapSource;
+                                        });
+                                    }
+                                }
                             }
-                        }
+                            catch { /* ignore catc */ }
+                        });
                     }
-                    catch { /* Skip stubborn files */ }
-                    await Task.Delay(50); // The "Breathe" delay for the CPU
+                    await Task.Delay(30); 
                 }
                 else
                 {
-                    await Task.Delay(500); // Wait longer if queue is empty
+                    await Task.Delay(500); 
                 }
             }
         }
@@ -180,8 +194,40 @@ namespace TaskManager
                     ProcessListView.SelectedItems.Add(itemToReselect);
                 }
             }
+            // get data
+            double totalCpu = sortedList.Sum(p => p.CpuUsage);
+            double totalRam = sortedList.Sum(p => ParseMemory(p.MemoryUsage));
 
-            _ = LoadIconsInBackground(sortedList);
+            // update graph on UI Thread
+            UpdateGraph(CpuGraphLine, _cpuHistory, totalCpu, 100); // 100% Max
+            UpdateGraph(RamGraphLine, _ramHistory, totalRam, 32000); // Beispiel 32GB Max
+
+        }
+
+        /// <summary>
+        /// helper for drawing the graph. It takes the new value, adds it to the history, and updates the Polyline points accordingly.
+        /// </summary>
+        /// <param name="line"></param>
+        /// <param name="history"></param>
+        /// <param name="newValue"></param>
+        /// <param name="max"></param>
+        private void UpdateGraph(Polyline line, List<double> history, double newValue, double max)
+        {
+            history.Add(newValue);
+            if (history.Count > MaxPoints) history.RemoveAt(0);
+
+            var points = new PointCollection();
+            double width = 400; // width of the graph
+            double height = 60; // height of the graph
+            double stepX = width / MaxPoints;
+
+            for (int i = 0; i < history.Count; i++)
+            {
+                double y = height - (history[i] / max * height);
+                y = Math.Clamp(y, 0, height);
+                points.Add(new Windows.Foundation.Point(i * stepX, y));
+            }
+            line.Points = points;
         }
 
         /// <summary>
@@ -194,46 +240,6 @@ namespace TaskManager
             if (long.TryParse(System.Text.RegularExpressions.Regex.Match(memString, @"\d+").Value, out long result))
                 return result;
             return 0;
-        }
-        private async Task LoadIconsInBackground(List<ProcessItem> items)
-        {
-            foreach (var item in items)
-            {
-                if (string.IsNullOrEmpty(item.ImagePath) || item.IconSource != null) continue;
-
-                // Check Cache first (Instant)
-                if (IconCache.TryGetIcon(item.ImagePath, out var cachedIcon))
-                {
-                    item.IconSource = cachedIcon;
-                    continue;
-                }
-
-                // Only do the heavy lifting for a few icons per second to prevent "choke"
-                await Task.Run(async () =>
-                {
-                    try
-                    {
-                        if (System.IO.File.Exists(item.ImagePath))
-                        {
-                            using var icon = System.Drawing.Icon.ExtractAssociatedIcon(item.ImagePath);
-                            if (icon != null)
-                            {
-                                var softwareBitmap = IconHelper.GetSoftwareBitmapFromIcon(icon);
-
-                                // Hand back to UI thread ONLY for the final display step
-                                DispatcherQueue.TryEnqueue(async () =>
-                                {
-                                    var bitmapSource = new Microsoft.UI.Xaml.Media.Imaging.SoftwareBitmapSource();
-                                    await bitmapSource.SetBitmapAsync(softwareBitmap);
-                                    IconCache.AddIcon(item.ImagePath!, bitmapSource);
-                                    item.IconSource = bitmapSource;
-                                });
-                            }
-                        }
-                    }
-                    catch { /* Skip stubborn files */ }
-                });
-            }
         }
 
         /// <summary>
