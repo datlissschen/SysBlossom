@@ -29,23 +29,31 @@
             <TextBox x:Name="SearchBox" 
              PlaceholderText="🔍 Search processes..." 
              Width="250" 
-             Background="White"
-             BorderBrush="{StaticResource PrimaryKawaiiBrush}"
-             BorderThickness="2"
-             CornerRadius="{StaticResource ControlCornerRadius}"
+             VerticalAlignment="Center"
+             CornerRadius="12"
              TextChanged="SearchBox_TextChanged"/>
 
-            <Button x:Name="RefreshButton" Content="Refresh" 
-            Background="{StaticResource SecondaryKawaiiBrush}" 
-            Foreground="White"
-            CornerRadius="10"
-            Click="RefreshButton_Click"/>
+            <Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click" 
+            VerticalAlignment="Center" CornerRadius="10" Padding="12,5,12,5"
+            Background="#AEC6CF" Foreground="White">
+                <Button.Resources>
+                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#779ECB"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#5D82AB"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White"/>
+                </Button.Resources>
+            </Button>
 
-            <Button x:Name="KillButton" Content="End Task" 
-            Background="#FFB7C5" 
-            Foreground="White"
-            CornerRadius="10"
-            Click="KillButton_Click"/>
+            <Button x:Name="KillButton" Content="End Task" Click="KillButton_Click" 
+                    VerticalAlignment="Center" CornerRadius="10" Padding="12,5,12,5"
+                    Background="#FFD1DC" Foreground="White">
+                <Button.Resources>
+                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF69B4"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#D1478B"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White"/>
+                </Button.Resources>
+            </Button>
         </StackPanel>
 
         <Grid Grid.Row="1" Margin="0,10,0,10" Background="White" CornerRadius="15">
