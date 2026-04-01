@@ -210,8 +210,8 @@ namespace TaskManager
             }
 
             // update graph on UI Thread
-            UpdateGraph(CpuGraphLine, _cpuHistory, totalCpu, 100); // 100% Max
-            UpdateGraph(RamGraphLine, _ramHistory, totalRam, 32000); // Beispiel 32GB Max
+            UpdateGraph(CpuGraphLine, _cpuHistory, totalCpu, 100, CpuSparkle);
+            UpdateGraph(RamGraphLine, _ramHistory, totalRam, 32000, RamSparkle);
 
         }
 
@@ -222,23 +222,47 @@ namespace TaskManager
         /// <param name="history"></param>
         /// <param name="newValue"></param>
         /// <param name="max"></param>
-        private void UpdateGraph(Polyline line, List<double> history, double newValue, double max)
+        private void UpdateGraph(Polyline line, List<double> history, double newValue, double max, TextBlock sparkle)
         {
             history.Add(newValue);
             if (history.Count > MaxPoints) history.RemoveAt(0);
 
             var points = new PointCollection();
-            double width = 400; // width of the graph
-            double height = 60; // height of the graph
-            double stepX = width / MaxPoints;
+
+            // Dynamical width
+            var canvas = line.Parent as Canvas;
+            double width = canvas.ActualWidth;
+
+            if (width <= 0) width = 300;
+
+            double height = canvas.Height;
+
+            double stepX = width / (MaxPoints - 1);
+
+            double lastX = 0;
+            double lastY = height;
 
             for (int i = 0; i < history.Count; i++)
             {
+                double x = i * stepX;
                 double y = height - (history[i] / max * height);
                 y = Math.Clamp(y, 0, height);
-                points.Add(new Windows.Foundation.Point(i * stepX, y));
+
+                points.Add(new Windows.Foundation.Point(x, y));
+
+                lastX = x;
+                lastY = y;
             }
+
             line.Points = points;
+
+            // Sparkle position
+            if (history.Count > 0)
+            {
+                sparkle.Visibility = Visibility.Visible;
+                Canvas.SetLeft(sparkle, lastX - 8);
+                Canvas.SetTop(sparkle, lastY - 12);
+            }
         }
 
         /// <summary>
