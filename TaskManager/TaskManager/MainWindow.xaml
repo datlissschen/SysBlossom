@@ -32,34 +32,34 @@
                      VerticalAlignment="Center"
                      CornerRadius="12"
                      TextChanged="SearchBox_TextChanged"
-                     Background="#AEC6CF" Foreground="White">
+                     Background="#E0BBE4" Foreground="Black">
                 <TextBox.Resources>
-                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#779ECB"/>
-                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#5D82AB"/>
-                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
-                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#C48DC9"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#C48DC9"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#C48DC9"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#C158C7"/>
                 </TextBox.Resources>
             </TextBox>
 
             <Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click" 
             VerticalAlignment="Center" CornerRadius="10" Padding="12,5,12,5"
-            Background="#AEC6CF" Foreground="White">
+            Background="#AEC6CF" Foreground="Black">
                 <Button.Resources>
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#779ECB"/>
                     <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#5D82AB"/>
-                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
-                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#E5EFFF"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#E5EFFF"/>
                 </Button.Resources>
             </Button>
 
             <Button x:Name="KillButton" Content="End Task" Click="KillButton_Click" 
                     VerticalAlignment="Center" CornerRadius="10" Padding="12,5,12,5"
-                    Background="#FFD1DC" Foreground="White">
+                    Background="#FFD1DC" Foreground="Black">
                 <Button.Resources>
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF69B4"/>
                     <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#D1478B"/>
-                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
-                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFE3EF"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFE3EF"/>
                 </Button.Resources>
             </Button>
         </StackPanel>
