@@ -228,9 +228,16 @@ namespace TaskManager
             if (history.Count > MaxPoints) history.RemoveAt(0);
 
             var points = new PointCollection();
-            double width = 400; 
-            double height = 50; 
-            double stepX = width / MaxPoints;
+
+            // Dynamical width
+            var canvas = line.Parent as Canvas;
+            double width = canvas.ActualWidth;
+
+            if (width <= 0) width = 300;
+
+            double height = canvas.Height;
+
+            double stepX = width / (MaxPoints - 1);
 
             double lastX = 0;
             double lastY = height;
@@ -249,7 +256,7 @@ namespace TaskManager
 
             line.Points = points;
 
-            // Sparkle move
+            // Sparkle position
             if (history.Count > 0)
             {
                 sparkle.Visibility = Visibility.Visible;
@@ -257,6 +264,7 @@ namespace TaskManager
                 Canvas.SetTop(sparkle, lastY - 12);
             }
         }
+
         /// <summary>
         /// Helper to turn "150 MB" into 150 for sorting
         /// </summary>

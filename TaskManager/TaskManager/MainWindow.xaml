@@ -14,12 +14,20 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid Background="#FFF9F0" Margin="20">
+    <Grid Background="#FFF9F0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Row="1" Grid.ColumnSpan="2" CornerRadius="25" 
+        Padding="20" 
+        Margin="0,10,0,0"
+        BorderBrush="{StaticResource SecondaryKawaiiBrush}" 
+        BorderThickness="2">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="120"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
         <StackPanel Orientation="Horizontal" Spacing="15" Grid.Row="0" Margin="0,0,0,15" VerticalAlignment="Center">
             <AnimatedVisualPlayer x:Name="MascotPlayer" Width="60" Height="60" AutoPlay="True">
@@ -27,13 +35,13 @@
             </AnimatedVisualPlayer>
 
             <TextBox x:Name="SearchBox" 
-     PlaceholderText="🔍 Search processes..." 
-     Width="250" 
-     VerticalAlignment="Center"
-     CornerRadius="12"
-     TextChanged="SearchBox_TextChanged"
-     BorderThickness="2"
-     Foreground="Black">
+             PlaceholderText="🔍 Search processes..." 
+             Width="250" 
+             VerticalAlignment="Center"
+             CornerRadius="12"
+             TextChanged="SearchBox_TextChanged"
+             BorderThickness="2"
+             Foreground="Black">    
                 <TextBox.Resources>
                     <SolidColorBrush x:Key="TextControlBackground" Color="#E0BBE4"/>
                     <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#C48DC9"/>
@@ -47,13 +55,13 @@
                     <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#C48DC9"/>
                     <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#666666"/>
                     <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#444444"/>
-                    <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#999999"/>
+                    <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#444444"/>
                 </TextBox.Resources>
             </TextBox>
 
             <Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click" 
-    VerticalAlignment="Center" CornerRadius="10" Padding="12,5,12,5"
-    Background="#AEC6CF" Foreground="Black">
+            VerticalAlignment="Center" CornerRadius="10" Padding="12,5,12,5"
+            Background="#AEC6CF" Foreground="Black">    
                 <Button.Resources>
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#779ECB"/>
                     <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#006CE6"/>
@@ -74,22 +82,24 @@
             </Button>
         </StackPanel>
 
-        <Border Grid.Row="1" Margin="0,5,0,15" Background="White" CornerRadius="25" BorderBrush="{StaticResource PrimaryKawaiiBrush}" BorderThickness="2">
-            <Grid Margin="15,5,15,5">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" Margin="5">
+        <Border Grid.Column="1" Margin="20,0,0,0" Padding="15" Background="White" CornerRadius="20" BorderBrush="{StaticResource PrimaryKawaiiBrush}" BorderThickness="2">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Margin="5" VerticalAlignment="Center">
                     <TextBlock Text="☁️ Total CPU" FontSize="12" Foreground="#779ECB" FontWeight="Bold"/>
-                    <Canvas x:Name="CpuCanvas" Height="50" VerticalAlignment="Bottom">
+                    <Canvas x:Name="CpuCanvas" Height="40" VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
                         <Polyline x:Name="CpuGraphLine" Stroke="#779ECB" StrokeThickness="3" StrokeLineJoin="Round"/>
                         <TextBlock x:Name="CpuSparkle" Text="✨" Foreground="Gold" FontSize="16" Visibility="Collapsed"/>
                     </Canvas>
                 </StackPanel>
-                <StackPanel Grid.Column="1" Margin="5">
+
+                <StackPanel Grid.Row="1" Margin="5" VerticalAlignment="Center">
                     <TextBlock Text="☁️ Total RAM" FontSize="12" Foreground="#FFB7C5" FontWeight="Bold"/>
-                    <Canvas x:Name="RamCanvas" Height="50" VerticalAlignment="Bottom">
+                    <Canvas x:Name="RamCanvas" Height="40" VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
                         <Polyline x:Name="RamGraphLine" Stroke="#FFB7C5" StrokeThickness="3" StrokeLineJoin="Round"/>
                         <TextBlock x:Name="RamSparkle" Text="✧" Foreground="#FF69B4" FontSize="18" Visibility="Collapsed"/>
                     </Canvas>
@@ -97,7 +107,7 @@
             </Grid>
         </Border>
 
-        <Border Grid.Row="2" Background="White" CornerRadius="25" Padding="10" BorderBrush="{StaticResource SecondaryKawaiiBrush}" BorderThickness="2">
+        <Border Grid.Row="2" Background="White" CornerRadius="25" Padding="25" BorderBrush="{StaticResource SecondaryKawaiiBrush}" BorderThickness="2">
             <ListView x:Name="ProcessListView" ItemsSource="{x:Bind Processes, Mode=OneWay}" SelectionMode="Extended" Background="Transparent">
                 <ListView.Resources>
                     <SolidColorBrush x:Key="ListViewItemForeground" Color="#4A4A4A"/>
