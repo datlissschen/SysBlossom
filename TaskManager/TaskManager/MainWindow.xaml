@@ -27,11 +27,19 @@
             </AnimatedVisualPlayer>
 
             <TextBox x:Name="SearchBox" 
-             PlaceholderText="🔍 Search processes..." 
-             Width="250" 
-             VerticalAlignment="Center"
-             CornerRadius="12"
-             TextChanged="SearchBox_TextChanged"/>
+                     PlaceholderText="🔍 Search processes..." 
+                     Width="250" 
+                     VerticalAlignment="Center"
+                     CornerRadius="12"
+                     TextChanged="SearchBox_TextChanged"
+                     Background="#AEC6CF" Foreground="White">
+                <TextBox.Resources>
+                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#779ECB"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#5D82AB"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White"/>
+                </TextBox.Resources>
+            </TextBox>
 
             <Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click" 
             VerticalAlignment="Center" CornerRadius="10" Padding="12,5,12,5"
