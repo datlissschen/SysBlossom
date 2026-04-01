@@ -6,6 +6,7 @@
     xmlns:local="using:TaskManager"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:lottie="using:CommunityToolkit.WinUI.Lottie"
     mc:Ignorable="d"
     Title="TaskManager">
 
@@ -13,47 +14,99 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid Margin="20">
+    <Grid Background="#FFF9F0" Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="100"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal" Spacing="10" Grid.Row="0" Margin="0,0,0,10">
+        <StackPanel Orientation="Horizontal" Spacing="15" Grid.Row="0" Margin="0,0,0,10" VerticalAlignment="Center">
+            <AnimatedVisualPlayer x:Name="MascotPlayer" Width="60" Height="60" AutoPlay="True">
+                <lottie:LottieVisualSource x:Name="MascotSource" UriSource="ms-appx:///Assets/Lottie/KawaiiMascot.json"/>
+            </AnimatedVisualPlayer>
+
             <TextBox x:Name="SearchBox" 
-                     PlaceholderText="🔍 Search processes..." 
-                     Width="250" 
-                     TextChanged="SearchBox_TextChanged"/>
-            <Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click"/>
-            <Button x:Name="KillButton" Content="End Task" Click="KillButton_Click"/>
+             PlaceholderText="🔍 Search processes..." 
+             Width="250" 
+             VerticalAlignment="Center"
+             CornerRadius="12"
+             TextChanged="SearchBox_TextChanged"/>
+
+            <Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click" 
+            VerticalAlignment="Center" CornerRadius="10" Padding="12,5,12,5"
+            Background="#AEC6CF" Foreground="White">
+                <Button.Resources>
+                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#779ECB"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#5D82AB"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White"/>
+                </Button.Resources>
+            </Button>
+
+            <Button x:Name="KillButton" Content="End Task" Click="KillButton_Click" 
+                    VerticalAlignment="Center" CornerRadius="10" Padding="12,5,12,5"
+                    Background="#FFD1DC" Foreground="White">
+                <Button.Resources>
+                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF69B4"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#D1478B"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White"/>
+                </Button.Resources>
+            </Button>
         </StackPanel>
 
-        <Grid Grid.Row="1" Margin="0,10,0,10" Background="{ThemeResource SystemControlBackgroundAltHighBrush}" CornerRadius="8">
+        <Grid Grid.Row="1" Margin="0,10,0,10" Background="White" CornerRadius="15">
+            <Grid.BorderBrush>
+                <StaticResource ResourceKey="PrimaryKawaiiBrush"/>
+            </Grid.BorderBrush>
+            <Grid.BorderThickness>2</Grid.BorderThickness>
+
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Margin="10">
-                <TextBlock Text="Total CPU Usage" FontSize="12" Foreground="LightSkyBlue" FontWeight="Bold"/>
+                <TextBlock Text="Total CPU Usage" FontSize="12" Foreground="#779ECB" FontWeight="Bold"/>
                 <Canvas Height="60" VerticalAlignment="Bottom">
-                    <Polyline x:Name="CpuGraphLine" Stroke="LightSkyBlue" StrokeThickness="2" Points="0,60 0,60"/>
+                    <Polyline x:Name="CpuGraphLine" Stroke="#779ECB" StrokeThickness="3" Points="0,60 0,60" StrokeLineJoin="Round"/>
                 </Canvas>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Margin="10">
-                <TextBlock Text="Total RAM Usage" FontSize="12" Foreground="LightPink" FontWeight="Bold"/>
+                <TextBlock Text="Total RAM Usage" FontSize="12" Foreground="#FFB7C5" FontWeight="Bold"/>
                 <Canvas Height="60" VerticalAlignment="Bottom">
-                    <Polyline x:Name="RamGraphLine" Stroke="LightPink" StrokeThickness="2" Points="0,60 0,60"/>
+                    <Polyline x:Name="RamGraphLine" Stroke="#FFB7C5" StrokeThickness="3" Points="0,60 0,60" StrokeLineJoin="Round"/>
                 </Canvas>
             </StackPanel>
         </Grid>
-
+        
         <ListView x:Name="ProcessListView" 
                   Grid.Row="2" 
                   ItemsSource="{x:Bind Processes, Mode=OneWay}"
                   SelectionMode="Extended">
+
+            <ListView.Resources>
+                <SolidColorBrush x:Key="ListViewItemForeground" Color="#4A4A4A"/>
+
+                <SolidColorBrush x:Key="ListViewItemForegroundPointerOver" Color="#FF69B4"/>
+
+                <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="#E0BBE4"/>
+                <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="#FFF0F5"/>
+                <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="#E0BBE4"/>
+
+                <SolidColorBrush x:Key="ListViewItemForegroundSelected" Color="#4A4A4A"/>
+                <SolidColorBrush x:Key="ListViewItemForegroundSelectedPointerOver" Color="#FF69B4"/>
+            </ListView.Resources>
+
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="CornerRadius" Value="8"/>
+                    <Setter Property="Margin" Value="2,2,2,2"/>
+                    <Setter Property="Background" Value="Transparent"/>
+                </Style>
+            </ListView.ItemContainerStyle>
 
             <ListView.HeaderTemplate>
                 <DataTemplate>
@@ -64,10 +117,10 @@
                             <ColumnDefinition Width="150"/>
                             <ColumnDefinition Width="150"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Process Name" FontWeight="Bold" Grid.Column="0"/>
-                        <TextBlock Text="CPU" FontWeight="Bold" Grid.Column="1"/>
-                        <TextBlock Text="Memory" FontWeight="Bold" Grid.Column="2"/>
-                        <TextBlock Text="Status" FontWeight="Bold" Grid.Column="3"/>
+                        <TextBlock Text="Process Name" Foreground="Black" FontWeight="Bold" Grid.Column="0"/>
+                        <TextBlock Text="CPU" Foreground="Black" FontWeight="Bold" Grid.Column="1"/>
+                        <TextBlock Text="Memory" Foreground="Black" FontWeight="Bold" Grid.Column="2"/>
+                        <TextBlock Text="Status" Foreground="Black" FontWeight="Bold" Grid.Column="3"/>
                     </Grid>
                 </DataTemplate>
             </ListView.HeaderTemplate>
@@ -81,12 +134,10 @@
                             <ColumnDefinition Width="150"/>
                             <ColumnDefinition Width="150"/>
                         </Grid.ColumnDefinitions>
-
                         <StackPanel Orientation="Horizontal" Grid.Column="0" Spacing="12">
                             <Image Source="{x:Bind IconSource, Mode=OneWay}" Width="24" Height="24" Stretch="Uniform" VerticalAlignment="Center"/>
                             <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" FontSize="14"/>
                         </StackPanel>
-
                         <TextBlock Text="{x:Bind CpuUsageDisplay, Mode=OneWay}" Grid.Column="1" VerticalAlignment="Center"/>
                         <TextBlock Text="{x:Bind MemoryUsage, Mode=OneWay}" Grid.Column="2" VerticalAlignment="Center"/>
                         <TextBlock Text="{x:Bind Status, Mode=OneWay}" Grid.Column="3" VerticalAlignment="Center"/>

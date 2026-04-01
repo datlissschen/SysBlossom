@@ -11,6 +11,15 @@
                 <!-- Other merged dictionaries here -->
             </ResourceDictionary.MergedDictionaries>
             <!-- Other app resources here -->
+            <Color x:Key="KawaiiPink">#FFD1DC</Color>
+            <Color x:Key="KawaiiBlue">#AEC6CF</Color>
+            <Color x:Key="KawaiiPurple">#E0BBE4</Color>
+            <Color x:Key="KawaiiMint">#B2F2BB</Color>
+
+            <SolidColorBrush x:Key="PrimaryKawaiiBrush" Color="{StaticResource KawaiiPink}"/>
+            <SolidColorBrush x:Key="SecondaryKawaiiBrush" Color="{StaticResource KawaiiBlue}"/>
+
+            <CornerRadius x:Key="ControlCornerRadius">12</CornerRadius>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -198,6 +198,17 @@ namespace TaskManager
             double totalCpu = sortedList.Sum(p => p.CpuUsage);
             double totalRam = sortedList.Sum(p => ParseMemory(p.MemoryUsage));
 
+            if (totalCpu > 70)
+            {
+                // Make the mascot look "panicked" or energetic
+                MascotPlayer.PlaybackRate = 2.0;
+            }
+            else
+            {
+                // Normal happy idle speed
+                MascotPlayer.PlaybackRate = 1.0;
+            }
+
             // update graph on UI Thread
             UpdateGraph(CpuGraphLine, _cpuHistory, totalCpu, 100); // 100% Max
             UpdateGraph(RamGraphLine, _ramHistory, totalRam, 32000); // Beispiel 32GB Max
