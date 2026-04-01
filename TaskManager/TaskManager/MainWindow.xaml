@@ -27,13 +27,13 @@
             </AnimatedVisualPlayer>
 
             <TextBox x:Name="SearchBox" 
-             PlaceholderText="🔍 Search processes..." 
-             Width="250" 
-             VerticalAlignment="Center"
-             CornerRadius="12"
-             TextChanged="SearchBox_TextChanged"
-             BorderThickness="2"
-             Foreground="Black">
+     PlaceholderText="🔍 Search processes..." 
+     Width="250" 
+     VerticalAlignment="Center"
+     CornerRadius="12"
+     TextChanged="SearchBox_TextChanged"
+     BorderThickness="2"
+     Foreground="Black">
                 <TextBox.Resources>
                     <SolidColorBrush x:Key="TextControlBackground" Color="#E0BBE4"/>
                     <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#C48DC9"/>
@@ -52,8 +52,8 @@
             </TextBox>
 
             <Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click" 
-            VerticalAlignment="Center" CornerRadius="10" Padding="12,5,12,5"
-            Background="#AEC6CF" Foreground="Black">
+    VerticalAlignment="Center" CornerRadius="10" Padding="12,5,12,5"
+    Background="#AEC6CF" Foreground="Black">
                 <Button.Resources>
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#779ECB"/>
                     <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#006CE6"/>
@@ -63,8 +63,8 @@
             </Button>
 
             <Button x:Name="KillButton" Content="End Task" Click="KillButton_Click" 
-                    VerticalAlignment="Center" CornerRadius="10" Padding="12,5,12,5"
-                    Background="#FFD1DC" Foreground="Black">
+            VerticalAlignment="Center" CornerRadius="10" Padding="12,5,12,5"
+            Background="#FFD1DC" Foreground="Black">
                 <Button.Resources>
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF69B4"/>
                     <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#D1478B"/>
@@ -73,61 +73,54 @@
                 </Button.Resources>
             </Button>
         </StackPanel>
-        
-        
 
-        <Border Grid.Row="1" Margin="0,5,0,15" 
-            Background="White" 
-            CornerRadius="25" 
-            BorderBrush="{StaticResource PrimaryKawaiiBrush}" 
-            BorderThickness="2">
+        <Border Grid.Row="1" Margin="0,5,0,15" Background="White" CornerRadius="25" BorderBrush="{StaticResource PrimaryKawaiiBrush}" BorderThickness="2">
             <Grid Margin="15,5,15,5">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-
                 <StackPanel Grid.Column="0" Margin="5">
-                    <TextBlock Text="Total CPU" FontSize="12" Foreground="#779ECB" FontWeight="Bold"/>
-                    <Canvas Height="50" VerticalAlignment="Bottom">
-                        <Polyline x:Name="CpuGraphLine" Stroke="#779ECB" StrokeThickness="3" Points="0,50 0,50" StrokeLineJoin="Round"/>
+                    <TextBlock Text="☁️ Total CPU" FontSize="12" Foreground="#779ECB" FontWeight="Bold"/>
+                    <Canvas x:Name="CpuCanvas" Height="50" VerticalAlignment="Bottom">
+                        <Polyline x:Name="CpuGraphLine" Stroke="#779ECB" StrokeThickness="3" StrokeLineJoin="Round"/>
+                        <TextBlock x:Name="CpuSparkle" Text="✨" Foreground="Gold" FontSize="16" Visibility="Collapsed"/>
                     </Canvas>
                 </StackPanel>
-
                 <StackPanel Grid.Column="1" Margin="5">
-                    <TextBlock Text="Total RAM" FontSize="12" Foreground="#FFB7C5" FontWeight="Bold"/>
-                    <Canvas Height="50" VerticalAlignment="Bottom">
-                        <Polyline x:Name="RamGraphLine" Stroke="#FFB7C5" StrokeThickness="3" Points="0,50 0,50" StrokeLineJoin="Round"/>
+                    <TextBlock Text="☁️ Total RAM" FontSize="12" Foreground="#FFB7C5" FontWeight="Bold"/>
+                    <Canvas x:Name="RamCanvas" Height="50" VerticalAlignment="Bottom">
+                        <Polyline x:Name="RamGraphLine" Stroke="#FFB7C5" StrokeThickness="3" StrokeLineJoin="Round"/>
+                        <TextBlock x:Name="RamSparkle" Text="✧" Foreground="#FF69B4" FontSize="18" Visibility="Collapsed"/>
                     </Canvas>
                 </StackPanel>
             </Grid>
         </Border>
 
-        <Border Grid.Row="2" 
-            Background="White" 
-            CornerRadius="25" 
-            Padding="10" 
-            BorderBrush="{StaticResource SecondaryKawaiiBrush}" 
-            BorderThickness="2">
-
-            <ListView x:Name="ProcessListView" 
-                  ItemsSource="{x:Bind Processes, Mode=OneWay}"
-                  SelectionMode="Extended"
-                  Background="Transparent">
-
+        <Border Grid.Row="2" Background="White" CornerRadius="25" Padding="10" BorderBrush="{StaticResource SecondaryKawaiiBrush}" BorderThickness="2">
+            <ListView x:Name="ProcessListView" ItemsSource="{x:Bind Processes, Mode=OneWay}" SelectionMode="Extended" Background="Transparent">
                 <ListView.Resources>
                     <SolidColorBrush x:Key="ListViewItemForeground" Color="#4A4A4A"/>
                     <SolidColorBrush x:Key="ListViewItemForegroundPointerOver" Color="#FF69B4"/>
                     <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="#E0BBE4"/>
                     <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="#FFF0F5"/>
-                    <SolidColorBrush x:Key="ListViewItemForegroundSelected" Color="#2D2D2D"/>
-                    <SolidColorBrush x:Key="ListViewItemForegroundSelectedPointerOver" Color="#FF69B4"/>
-                    <SolidColorBrush x:Key="ListViewItemForegroundPressed" Color="#FF69B4"/>
-                    <SolidColorBrush x:Key="ListViewItemBackground" Color="Transparent"/>
                     <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="#D6A4DC"/>
-                    <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="#C48DC9"/>
-                    <SolidColorBrush x:Key="ListViewItemRevealBorderBrush" Color="Transparent"/>
-                    <SolidColorBrush x:Key="ListViewItemSelectionIndicatorVisualChecked" Color="#FF69B4"/>
+
+                    <Style x:Key="KawaiiThumbStyle" TargetType="Thumb">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Thumb">
+                                    <TextBlock Text="♥" Foreground="#FF69B4" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
+                    <Style TargetType="ScrollBar">
+                        <Setter Property="Background" Value="Transparent"/>
+                    </Style>
+                    <SolidColorBrush x:Key="ScrollBarThumbFillPointerOver" Color="#FF69B4"/>
+                    <SolidColorBrush x:Key="ScrollBarThumbFill" Color="#FFD1DC"/>
                 </ListView.Resources>
 
                 <ListView.ItemContainerStyle>
