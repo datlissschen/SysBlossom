@@ -69,7 +69,7 @@
                     <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#E5EFFF"/>
                 </Button.Resources>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <AnimatedVisualPlayer x:Name="RefreshLoadingPlayer" Width="20" Height="20" AutoPlay="False" Visibility="Collapsed">
+                    <AnimatedVisualPlayer x:Name="RefreshLoadingPlayer" Width="25" Height="25" AutoPlay="False" Visibility="Collapsed">
                         <lottie:LottieVisualSource UriSource="ms-appx:///Assets/Lottie/LoadingFlower.json"/>
                     </AnimatedVisualPlayer>
                     <TextBlock x:Name="RefreshButtonText" Text="Refresh"/>
