@@ -108,7 +108,7 @@
         </Border>
 
         <Border Grid.Row="2" Background="White" CornerRadius="25" Padding="25" BorderBrush="{StaticResource SecondaryKawaiiBrush}" BorderThickness="2">
-            <ListView x:Name="ProcessListView" ItemsSource="{x:Bind Processes, Mode=OneWay}" SelectionMode="Extended" Background="Transparent">
+            <ListView x:Name="ProcessListView" ItemsSource="{x:Bind Processes, Mode=OneWay}" SelectionMode="Extended" Background="Transparent" SelectionChanged="ProcessListView_SelectionChanged">
                 <ListView.Resources>
                     <SolidColorBrush x:Key="ListViewItemForeground" Color="#4A4A4A"/>
                     <SolidColorBrush x:Key="ListViewItemForegroundPointerOver" Color="#FF69B4"/>
@@ -170,6 +170,18 @@
                                 <Image Source="{x:Bind IconSource, Mode=OneWay}" Width="28" Height="28" VerticalAlignment="Center"/>
                                 <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" FontSize="14" FontWeight="Medium"/>
                             </StackPanel>
+
+                            <AnimatedVisualPlayer x:Name="HeartBurstPlayer" 
+                                  Grid.Column="0"
+                                  Width="100" Height="100" 
+                                  HorizontalAlignment="Left"
+                                  Margin="-20,0,0,0"
+                                  AutoPlay="False" 
+                                  Visibility="Hidden"
+                                  Canvas.ZIndex="10">
+                                <lottie:LottieVisualSource UriSource="ms-appx:///Assets/Lottie/HeartBurst.json"/>
+                            </AnimatedVisualPlayer>
+
                             <TextBlock Text="{x:Bind CpuUsageDisplay, Mode=OneWay}" Grid.Column="1" VerticalAlignment="Center"/>
                             <TextBlock Text="{x:Bind MemoryUsage, Mode=OneWay}" Grid.Column="2" VerticalAlignment="Center"/>
                             <TextBlock Text="{x:Bind Status, Mode=OneWay}" Grid.Column="3" VerticalAlignment="Center"/>

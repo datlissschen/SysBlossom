@@ -15,9 +15,6 @@
 		<EnableMsixTooling>true</EnableMsixTooling>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
-	<ItemGroup>
-	  <None Remove="Assets\Lottie\Heart burst.json" />
-	</ItemGroup>
 
   <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -48,7 +45,7 @@
 	  <PackageReference Include="System.Drawing.Common" Version="9.0.2" />
   </ItemGroup>
   <ItemGroup>
-    <Content Update="Assets\Lottie\Heart burst.json">
+    <Content Update="Assets\Lottie\HeartBurst.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

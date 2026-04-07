@@ -332,6 +332,56 @@ namespace TaskManager
                 await RefreshDataAsync();
             }
         }
+
+        /// <summary>
+        /// Handles the SelectionChanged event for the process list view and plays an animation for each newly selected
+        /// item.
+        /// </summary>
+        /// <remarks>The animation is only played for items that have just been selected. The method is
+        /// asynchronous and will not block the UI thread while animations are playing.</remarks>
+        /// <param name="sender">The source of the event, typically the process list view control.</param>
+        /// <param name="e">An object that contains event data, including the items that were added to or removed from the selection.</param>
+        private async void ProcessListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            foreach (var item in e.AddedItems)
+            {
+                //get visual for data object
+                var container = ProcessListView.ContainerFromItem(item) as ListViewItem;
+                if (container == null) continue;
+
+                // search heartburstplayer
+                var heartPlayer = FindChild<AnimatedVisualPlayer>(container, "HeartBurstPlayer");
+
+                if (heartPlayer != null)
+                {
+                    heartPlayer.Visibility = Visibility.Visible;
+                    await heartPlayer.PlayAsync(0, 1, false);
+                    heartPlayer.Visibility = Visibility.Hidden;
+                }
+            }
+        }
+
+        /// <summary>
+        /// helper to find child control by name and type. It recursively searches the visual tree starting from the specified parent object.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="parent"></param>
+        /// <param name="childName"></param>
+        /// <returns></returns>
+        public static T FindChild<T>(DependencyObject parent, string childName) where T : DependencyObject
+        {
+            if (parent == null) return null;
+            int childrenCount = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < childrenCount; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T tChild && (child as FrameworkElement).Name == childName) return tChild;
+
+                var result = FindChild<T>(child, childName);
+                if (result != null) return result;
+            }
+            return null;
+        }
     }
 }
 
