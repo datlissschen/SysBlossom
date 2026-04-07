@@ -99,8 +99,29 @@ namespace TaskManager
             }
         }
 
-        private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await RefreshDataAsync();
+        /// <summary>
+        /// Logic for the refresh button. It shows a loading animation while refreshing the data asynchronously. 
+        /// The actual data refresh is done in the RefreshDataAsync method, which is called when the button is clicked and also periodically by the timer. 
+        /// The loading animation is displayed until the data refresh is complete, providing visual feedback to the user that the refresh operation is in progress.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void RefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshLoadingPlayer.Visibility = Visibility.Visible;
+            _ = RefreshLoadingPlayer.PlayAsync(0, 1, true);
 
+            await RefreshDataAsync();
+
+            RefreshLoadingPlayer.Stop();
+            RefreshLoadingPlayer.Visibility = Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// Method to check whether the text in the search box has changed and to trigger the refresh of the data accordingly.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             _filterText = (sender as TextBox)?.Text ?? string.Empty;
