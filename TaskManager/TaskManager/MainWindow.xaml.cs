@@ -386,7 +386,7 @@ namespace TaskManager
                 {
                     heartPlayer.Visibility = Visibility.Visible;
                     await heartPlayer.PlayAsync(0, 1, false);
-                    heartPlayer.Visibility = Visibility.Hidden;
+                    heartPlayer.Visibility = Visibility.Collapsed;
                 }
             }
         }

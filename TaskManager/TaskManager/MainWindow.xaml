@@ -59,7 +59,7 @@
                 </TextBox.Resources>
             </TextBox>
 
-            <Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click" 
+            <Button x:Name="RefreshButton" Click="RefreshButton_Click" 
             VerticalAlignment="Center" CornerRadius="10" Padding="12,5,12,5"
             Background="#AEC6CF" Foreground="Black">    
                 <Button.Resources>
@@ -183,7 +183,7 @@
                                   HorizontalAlignment="Left"
                                   Margin="-20,0,0,0"
                                   AutoPlay="False" 
-                                  Visibility="Hidden"
+                                  Visibility="Collapsed"
                                   Canvas.ZIndex="10">
                                 <lottie:LottieVisualSource UriSource="ms-appx:///Assets/Lottie/HeartBurst.json"/>
                             </AnimatedVisualPlayer>
