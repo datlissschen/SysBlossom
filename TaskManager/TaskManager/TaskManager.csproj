@@ -15,6 +15,9 @@
 		<EnableMsixTooling>true</EnableMsixTooling>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
+	<ItemGroup>
+	  <None Remove="Assets\Lottie\Heart burst.json" />
+	</ItemGroup>
 
   <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -43,6 +46,11 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7705" />
 	  <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260317003" />
 	  <PackageReference Include="System.Drawing.Common" Version="9.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Update="Assets\Lottie\Heart burst.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <!--
