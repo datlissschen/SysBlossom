@@ -59,7 +59,7 @@
                 </TextBox.Resources>
             </TextBox>
 
-            <Button x:Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click" 
+            <Button x:Name="RefreshButton" Click="RefreshButton_Click" 
             VerticalAlignment="Center" CornerRadius="10" Padding="12,5,12,5"
             Background="#AEC6CF" Foreground="Black">    
                 <Button.Resources>
@@ -68,6 +68,12 @@
                     <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#E5EFFF"/>
                     <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#E5EFFF"/>
                 </Button.Resources>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <AnimatedVisualPlayer x:Name="RefreshLoadingPlayer" Width="30" Height="30" AutoPlay="False" Visibility="Collapsed">
+                        <lottie:LottieVisualSource UriSource="ms-appx:///Assets/Lottie/LoadingFlower.json"/>
+                    </AnimatedVisualPlayer>
+                    <TextBlock x:Name="RefreshButtonText" Text="Refresh"/>
+                </StackPanel>
             </Button>
 
             <Button x:Name="KillButton" Content="End Task" Click="KillButton_Click" 
@@ -108,7 +114,7 @@
         </Border>
 
         <Border Grid.Row="2" Background="White" CornerRadius="25" Padding="25" BorderBrush="{StaticResource SecondaryKawaiiBrush}" BorderThickness="2">
-            <ListView x:Name="ProcessListView" ItemsSource="{x:Bind Processes, Mode=OneWay}" SelectionMode="Extended" Background="Transparent">
+            <ListView x:Name="ProcessListView" ItemsSource="{x:Bind Processes, Mode=OneWay}" SelectionMode="Extended" Background="Transparent" SelectionChanged="ProcessListView_SelectionChanged">
                 <ListView.Resources>
                     <SolidColorBrush x:Key="ListViewItemForeground" Color="#4A4A4A"/>
                     <SolidColorBrush x:Key="ListViewItemForegroundPointerOver" Color="#FF69B4"/>
@@ -163,13 +169,26 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="300"/>
                                 <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="125"/>
+                                <ColumnDefinition Width="125"/>
+                                <ColumnDefinition Width="100"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Orientation="Horizontal" Grid.Column="0" Spacing="12">
                                 <Image Source="{x:Bind IconSource, Mode=OneWay}" Width="28" Height="28" VerticalAlignment="Center"/>
                                 <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" FontSize="14" FontWeight="Medium"/>
                             </StackPanel>
+
+                            <AnimatedVisualPlayer x:Name="HeartBurstPlayer" 
+                                                  Grid.Column="4" 
+                                                  Width="80" Height="80" 
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  AutoPlay="False" 
+                                                  Visibility="Collapsed"
+                                                  Canvas.ZIndex="10">
+                                <lottie:LottieVisualSource UriSource="ms-appx:///Assets/Lottie/HeartBurst.json"/>
+                            </AnimatedVisualPlayer>
+
                             <TextBlock Text="{x:Bind CpuUsageDisplay, Mode=OneWay}" Grid.Column="1" VerticalAlignment="Center"/>
                             <TextBlock Text="{x:Bind MemoryUsage, Mode=OneWay}" Grid.Column="2" VerticalAlignment="Center"/>
                             <TextBlock Text="{x:Bind Status, Mode=OneWay}" Grid.Column="3" VerticalAlignment="Center"/>

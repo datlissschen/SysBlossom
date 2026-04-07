@@ -99,8 +99,29 @@ namespace TaskManager
             }
         }
 
-        private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await RefreshDataAsync();
+        /// <summary>
+        /// Logic for the refresh button. It shows a loading animation while refreshing the data asynchronously. 
+        /// The actual data refresh is done in the RefreshDataAsync method, which is called when the button is clicked and also periodically by the timer. 
+        /// The loading animation is displayed until the data refresh is complete, providing visual feedback to the user that the refresh operation is in progress.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void RefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshLoadingPlayer.Visibility = Visibility.Visible;
+            _ = RefreshLoadingPlayer.PlayAsync(0, 1, true);
 
+            await RefreshDataAsync();
+
+            RefreshLoadingPlayer.Stop();
+            RefreshLoadingPlayer.Visibility = Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// Method to check whether the text in the search box has changed and to trigger the refresh of the data accordingly.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             _filterText = (sender as TextBox)?.Text ?? string.Empty;
@@ -202,11 +223,20 @@ namespace TaskManager
             {
                 // Make the mascot look "panicked" or energetic
                 MascotPlayer.PlaybackRate = 2.0;
+                if (MascotSource.UriSource.ToString().Contains("Happy"))
+                {
+                    MascotSource.UriSource = new Uri("ms-appx:///Assets/Lottie/Mascot_Stress.json");
+                    _ = MascotPlayer.PlayAsync(0, 1, true);
+                }
             }
             else
             {
-                // Normal happy idle speed
                 MascotPlayer.PlaybackRate = 1.0;
+                if (MascotSource.UriSource.ToString().Contains("Stress"))
+                {
+                    MascotSource.UriSource = new Uri("ms-appx:///Assets/Lottie/Mascot_Happy.json");
+                    _ = MascotPlayer.PlayAsync(0, 1, true);
+                }
             }
 
             // update graph on UI Thread
@@ -331,6 +361,56 @@ namespace TaskManager
 
                 await RefreshDataAsync();
             }
+        }
+
+        /// <summary>
+        /// Handles the SelectionChanged event for the process list view and plays an animation for each newly selected
+        /// item.
+        /// </summary>
+        /// <remarks>The animation is only played for items that have just been selected. The method is
+        /// asynchronous and will not block the UI thread while animations are playing.</remarks>
+        /// <param name="sender">The source of the event, typically the process list view control.</param>
+        /// <param name="e">An object that contains event data, including the items that were added to or removed from the selection.</param>
+        private async void ProcessListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            foreach (var item in e.AddedItems)
+            {
+                //get visual for data object
+                var container = ProcessListView.ContainerFromItem(item) as ListViewItem;
+                if (container == null) continue;
+
+                // search heartburstplayer
+                var heartPlayer = FindChild<AnimatedVisualPlayer>(container, "HeartBurstPlayer");
+
+                if (heartPlayer != null)
+                {
+                    heartPlayer.Visibility = Visibility.Visible;
+                    await heartPlayer.PlayAsync(0, 1, false);
+                    heartPlayer.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+
+        /// <summary>
+        /// helper to find child control by name and type. It recursively searches the visual tree starting from the specified parent object.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="parent"></param>
+        /// <param name="childName"></param>
+        /// <returns></returns>
+        public static T FindChild<T>(DependencyObject parent, string childName) where T : DependencyObject
+        {
+            if (parent == null) return null;
+            int childrenCount = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < childrenCount; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T tChild && (child as FrameworkElement).Name == childName) return tChild;
+
+                var result = FindChild<T>(child, childName);
+                if (result != null) return result;
+            }
+            return null;
         }
     }
 }
