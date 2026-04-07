@@ -93,10 +93,7 @@
                     <TextBlock Text="☁️ Total CPU" FontSize="12" Foreground="#779ECB" FontWeight="Bold"/>
                     <Canvas x:Name="CpuCanvas" Height="40" VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
                         <Polyline x:Name="CpuGraphLine" Stroke="#779ECB" StrokeThickness="3" StrokeLineJoin="Round"/>
-
-                        <AnimatedVisualPlayer x:Name="CpuSparkle" Width="30" Height="30" AutoPlay="True" Visibility="Collapsed">
-                            <lottie:LottieVisualSource UriSource="ms-appx:///Assets/Lottie/Sparkle.json"/>
-                        </AnimatedVisualPlayer>
+                        <TextBlock x:Name="CpuSparkle" Text="✨" Foreground="Gold" FontSize="16" Visibility="Collapsed"/>
                     </Canvas>
                 </StackPanel>
 
@@ -104,10 +101,7 @@
                     <TextBlock Text="☁️ Total RAM" FontSize="12" Foreground="#FFB7C5" FontWeight="Bold"/>
                     <Canvas x:Name="RamCanvas" Height="40" VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
                         <Polyline x:Name="RamGraphLine" Stroke="#FFB7C5" StrokeThickness="3" StrokeLineJoin="Round"/>
-
-                        <AnimatedVisualPlayer x:Name="RamSparkle" Width="35" Height="35" AutoPlay="True" Visibility="Collapsed">
-                            <lottie:LottieVisualSource UriSource="ms-appx:///Assets/Lottie/Twinkle.json"/>
-                        </AnimatedVisualPlayer>
+                        <TextBlock x:Name="RamSparkle" Text="✧" Foreground="#FF69B4" FontSize="18" Visibility="Collapsed"/>
                     </Canvas>
                 </StackPanel>
             </Grid>
