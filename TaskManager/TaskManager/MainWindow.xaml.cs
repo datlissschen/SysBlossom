@@ -202,11 +202,20 @@ namespace TaskManager
             {
                 // Make the mascot look "panicked" or energetic
                 MascotPlayer.PlaybackRate = 2.0;
+                if (MascotSource.UriSource.ToString().Contains("Happy"))
+                {
+                    MascotSource.UriSource = new Uri("ms-appx:///Assets/Lottie/Mascot_Stress.json");
+                    _ = MascotPlayer.PlayAsync(0, 1, true);
+                }
             }
             else
             {
-                // Normal happy idle speed
                 MascotPlayer.PlaybackRate = 1.0;
+                if (MascotSource.UriSource.ToString().Contains("Stress"))
+                {
+                    MascotSource.UriSource = new Uri("ms-appx:///Assets/Lottie/Mascot_Happy.json");
+                    _ = MascotPlayer.PlayAsync(0, 1, true);
+                }
             }
 
             // update graph on UI Thread
