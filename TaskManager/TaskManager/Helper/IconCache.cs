@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.UI.Xaml.Media;
 
-namespace TaskManager
+namespace TaskManager.Helper
 {
     public static class IconCache
     {

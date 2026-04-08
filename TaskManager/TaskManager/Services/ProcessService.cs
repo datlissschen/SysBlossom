@@ -7,8 +7,10 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Windows.Graphics.Imaging;
+using TaskManager.Helper;
+using TaskManager.Models;
 
-namespace TaskManager
+namespace TaskManager.Services
 {
     public class ProcessService
     {
@@ -105,6 +107,25 @@ namespace TaskManager
         }
 
         /// <summary>
+        /// method to get the icon of a process. It uses the file path of the process to extract the associated icon.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        private ImageSource? GetIcon(string fileName)
+        {
+            try
+            {
+                using (Icon icon = Icon.ExtractAssociatedIcon(fileName)!)
+                {
+                    // Convert System.Drawing.Icon to a WinUI compatible ImageSource
+                    return null; 
+                }
+            }
+            catch { return null; }
+        }
+
+
+        /// <summary>
         /// Method to kill the task via the given id.
         /// </summary>
         /// <param name="id"></param>
@@ -126,18 +147,6 @@ namespace TaskManager
             }
         }
 
-        private ImageSource? GetIcon(string fileName)
-        {
-            try
-            {
-                using (Icon icon = Icon.ExtractAssociatedIcon(fileName)!)
-                {
-                    // Convert System.Drawing.Icon to a WinUI compatible ImageSource
-                    return null; 
-                }
-            }
-            catch { return null; }
-        }
 
     }
 }
