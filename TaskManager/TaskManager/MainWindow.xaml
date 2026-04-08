@@ -150,14 +150,15 @@
                     <DataTemplate>
                         <Grid Margin="12,0,0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="250"/>
+                                <ColumnDefinition Width="200"/>
                                 <ColumnDefinition Width="50"/>
-                                <ColumnDefinition Width="125"/>
-                                <ColumnDefinition Width="125"/>
-                                <ColumnDefinition Width="125"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="🌸 Process" FontWeight="Bold" Grid.Column="0"/>
-                            <TextBlock Text="#" FontWeight="Bold" Grid.Column="1" HorizontalAlignment="Center"/>
+                            <TextBlock Text="#" FontWeight="Bold" Grid.Column="1"/>
                             <TextBlock Text="⚡ CPU" FontWeight="Bold" Grid.Column="2"/>
                             <TextBlock Text="🧠 Memory" FontWeight="Bold" Grid.Column="3"/>
                             <TextBlock Text="✨ Status" FontWeight="Bold" Grid.Column="4"/>
@@ -169,11 +170,11 @@
                     <DataTemplate x:DataType="local:ProcessItem">
                         <Grid Height="45">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="250"/>
+                                <ColumnDefinition Width="200"/>
                                 <ColumnDefinition Width="50"/>
-                                <ColumnDefinition Width="125"/>
-                                <ColumnDefinition Width="125"/>
-                                <ColumnDefinition Width="125"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="100"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Orientation="Horizontal" Grid.Column="0" Spacing="12">
@@ -181,8 +182,13 @@
                                 <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" FontSize="14" FontWeight="Medium"/>
                             </StackPanel>
 
+                            <TextBlock Text="{x:Bind PidCount, Mode=OneWay}" Grid.Column="1" VerticalAlignment="Center"/>
+                            <TextBlock Text="{x:Bind CpuUsageDisplay, Mode=OneWay}" Grid.Column="2" VerticalAlignment="Center"/>
+                            <TextBlock Text="{x:Bind MemoryUsage, Mode=OneWay}" Grid.Column="3" VerticalAlignment="Center"/>
+                            <TextBlock Text="{x:Bind Status, Mode=OneWay}" Grid.Column="4" VerticalAlignment="Center"/>
+
                             <AnimatedVisualPlayer x:Name="HeartBurstPlayer" 
-                                                  Grid.Column="4" 
+                                                  Grid.Column="5" 
                                                   Width="80" Height="80" 
                                                   HorizontalAlignment="Center"
                                                   VerticalAlignment="Center"
@@ -191,16 +197,6 @@
                                                   Canvas.ZIndex="10">
                                 <lottie:LottieVisualSource UriSource="ms-appx:///Assets/Lottie/HeartBurst.json"/>
                             </AnimatedVisualPlayer>
-
-                            <TextBlock Text="{x:Bind PidCount, Mode=OneWay}" 
-                               Grid.Column="1" 
-                               VerticalAlignment="Center" 
-                               HorizontalAlignment="Center"
-                               Foreground="#779ECB" 
-                               FontWeight="Bold"/>
-                            <TextBlock Text="{x:Bind CpuUsageDisplay, Mode=OneWay} ↓" Grid.Column="2" VerticalAlignment="Center"/>
-                            <TextBlock Text="{x:Bind MemoryUsage, Mode=OneWay}" Grid.Column="3" VerticalAlignment="Center"/>
-                            <TextBlock Text="{x:Bind Status, Mode=OneWay}" Grid.Column="4" VerticalAlignment="Center"/>
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
