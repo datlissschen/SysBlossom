@@ -16,7 +16,7 @@
 
     <Grid Background="#FFF9F0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Row="1" Grid.ColumnSpan="2" CornerRadius="25" 
         Padding="20" 
-        Margin="0,10,0,0"
+        Margin="0,0,0,0"
         BorderBrush="{StaticResource SecondaryKawaiiBrush}" 
         BorderThickness="2">
         <Grid.RowDefinitions>
@@ -29,7 +29,7 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <StackPanel Orientation="Horizontal" Spacing="15" Grid.Row="0" Margin="0,0,0,15" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="15" Grid.Row="0" Margin="0,0,0,10" VerticalAlignment="Center">
             <AnimatedVisualPlayer x:Name="MascotPlayer" Width="60" Height="60" AutoPlay="True">
                 <lottie:LottieVisualSource x:Name="MascotSource" UriSource="ms-appx:///Assets/Lottie/KawaiiMascot.json"/>
             </AnimatedVisualPlayer>
@@ -74,6 +74,9 @@
                     </AnimatedVisualPlayer>
                     <TextBlock x:Name="RefreshButtonText" Text="Refresh"/>
                 </StackPanel>
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="Here you can refresh the whole task manager ✨" />
+                </ToolTipService.ToolTip>
             </Button>
 
             <Button x:Name="KillButton" Content="End Task" Click="KillButton_Click" 
@@ -85,35 +88,39 @@
                     <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFE3EF"/>
                     <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFE3EF"/>
                 </Button.Resources>
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="If you select a process an click here, it is killed ✨" />
+                </ToolTipService.ToolTip>
             </Button>
+
+            <Border Grid.Column="1" Margin="20,0,0,0" Padding="15" Background="White" CornerRadius="20" BorderBrush="{StaticResource PrimaryKawaiiBrush}" BorderThickness="2">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Margin="5" Width ="230" VerticalAlignment="Center">
+                        <TextBlock Text="☁️ Total CPU" FontSize="12" Foreground="#779ECB" FontWeight="Bold"/>
+                        <Canvas x:Name="CpuCanvas" Height="40" VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
+                            <Polyline x:Name="CpuGraphLine" Stroke="#779ECB" StrokeThickness="3" StrokeLineJoin="Round"/>
+                            <TextBlock x:Name="CpuSparkle" Text="✨" Foreground="Gold" FontSize="16" Visibility="Collapsed"/>
+                        </Canvas>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1" Margin="5" Width ="230" VerticalAlignment="Center">
+                        <TextBlock Text="☁️ Total RAM" FontSize="12" Foreground="#FFB7C5" FontWeight="Bold"/>
+                        <Canvas x:Name="RamCanvas" Height="40" VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
+                            <Polyline x:Name="RamGraphLine" Stroke="#FFB7C5" StrokeThickness="3" StrokeLineJoin="Round"/>
+                            <TextBlock x:Name="RamSparkle" Text="✧" Foreground="#FF69B4" FontSize="18" Visibility="Collapsed"/>
+                        </Canvas>
+                    </StackPanel>
+                </Grid>
+            </Border>
         </StackPanel>
 
-        <Border Grid.Column="1" Margin="20,0,0,0" Padding="15" Background="White" CornerRadius="20" BorderBrush="{StaticResource PrimaryKawaiiBrush}" BorderThickness="2">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="0" Margin="5" VerticalAlignment="Center">
-                    <TextBlock Text="☁️ Total CPU" FontSize="12" Foreground="#779ECB" FontWeight="Bold"/>
-                    <Canvas x:Name="CpuCanvas" Height="40" VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
-                        <Polyline x:Name="CpuGraphLine" Stroke="#779ECB" StrokeThickness="3" StrokeLineJoin="Round"/>
-                        <TextBlock x:Name="CpuSparkle" Text="✨" Foreground="Gold" FontSize="16" Visibility="Collapsed"/>
-                    </Canvas>
-                </StackPanel>
-
-                <StackPanel Grid.Row="1" Margin="5" VerticalAlignment="Center">
-                    <TextBlock Text="☁️ Total RAM" FontSize="12" Foreground="#FFB7C5" FontWeight="Bold"/>
-                    <Canvas x:Name="RamCanvas" Height="40" VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
-                        <Polyline x:Name="RamGraphLine" Stroke="#FFB7C5" StrokeThickness="3" StrokeLineJoin="Round"/>
-                        <TextBlock x:Name="RamSparkle" Text="✧" Foreground="#FF69B4" FontSize="18" Visibility="Collapsed"/>
-                    </Canvas>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <Border Grid.Row="2" Background="White" CornerRadius="25" Padding="25" BorderBrush="{StaticResource SecondaryKawaiiBrush}" BorderThickness="2">
+        <Border Grid.Row="1" Background="White" CornerRadius="25" Padding="25" BorderBrush="{StaticResource SecondaryKawaiiBrush}" BorderThickness="2">
             <ListView x:Name="ProcessListView" ItemsSource="{x:Bind Processes, Mode=OneWay}" SelectionMode="Extended" Background="Transparent" SelectionChanged="ProcessListView_SelectionChanged">
                 <ListView.Resources>
                     <SolidColorBrush x:Key="ListViewItemForeground" Color="#4A4A4A"/>
@@ -150,15 +157,18 @@
                     <DataTemplate>
                         <Grid Margin="12,0,0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="300"/>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="250"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="90"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="🌸 Process" Foreground="Black" FontWeight="Bold" Grid.Column="0"/>
-                            <TextBlock Text="⚡ CPU" Foreground="Black" FontWeight="Bold" Grid.Column="1"/>
-                            <TextBlock Text="🧠 Memory" Foreground="Black" FontWeight="Bold" Grid.Column="2"/>
-                            <TextBlock Text="✨ Status" Foreground="Black" FontWeight="Bold" Grid.Column="3"/>
+                            <TextBlock Text="🌸 Process" FontWeight="Bold" Grid.Column="0"/>
+                            <TextBlock Text="#" FontWeight="Bold" Grid.Column="1"/>
+                            <TextBlock Text="⚡ CPU" FontWeight="Bold" Grid.Column="2"/>
+                            <TextBlock Text="🧠 Memory" FontWeight="Bold" Grid.Column="3"/>
+                            <TextBlock Text="✨ Status" FontWeight="Bold" Grid.Column="4"/>
                         </Grid>
                     </DataTemplate>
                 </ListView.HeaderTemplate>
@@ -167,19 +177,100 @@
                     <DataTemplate x:DataType="local:ProcessItem">
                         <Grid Height="45">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="300"/>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="125"/>
-                                <ColumnDefinition Width="125"/>
+                                <ColumnDefinition Width="250"/>
                                 <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="90"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Orientation="Horizontal" Grid.Column="0" Spacing="12">
                                 <Image Source="{x:Bind IconSource, Mode=OneWay}" Width="28" Height="28" VerticalAlignment="Center"/>
                                 <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" FontSize="14" FontWeight="Medium"/>
                             </StackPanel>
 
+                            <Button Grid.Column="1" 
+                                VerticalAlignment="Center" 
+                                HorizontalAlignment="Center"
+                                Padding="8,2"
+                                Background="#E0BBE4" 
+                                CornerRadius="10"
+                                BorderThickness="0">
+
+                                <Button.Resources>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF69B4"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#D1478B"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFE3EF"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFE3EF"/>
+                                </Button.Resources>
+
+                                <ToolTipService.ToolTip>
+                                    <ToolTip Content="This is the number of subprocesses. Click for more info! ✨" />
+                                </ToolTipService.ToolTip>
+
+                                <Button.Content>
+                                    <TextBlock Text="{x:Bind PidCount, Mode=OneWay}" 
+                                       Foreground="White" 
+                                       FontWeight="Bold"/>
+                                </Button.Content>
+
+                                <Button.Flyout>
+                                    <Flyout Opening="Flyout_Opening" Closed="Flyout_Closed">
+                                        <Flyout.FlyoutPresenterStyle>
+                                            <Style TargetType="FlyoutPresenter">
+                                                <Setter Property="Background" Value="White"/>
+                                                <Setter Property="BorderBrush" Value="{StaticResource PrimaryKawaiiBrush}"/>
+                                                <Setter Property="BorderThickness" Value="2"/>
+                                                <Setter Property="CornerRadius" Value="15"/>
+                                                <Setter Property="Padding" Value="15"/>
+                                            </Style>
+                                        </Flyout.FlyoutPresenterStyle>
+
+                                        <StackPanel Spacing="10" MinWidth="250">
+                                            <TextBlock Text="🌸 Subprocess Details" FontWeight="Bold" Foreground="#FF69B4" FontSize="16"/>
+
+                                            <Grid Margin="0,5,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="60"/>
+                                                    <ColumnDefinition Width="70"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="PID" FontWeight="Bold" FontSize="11" Grid.Column="0" Foreground="Gray"/>
+                                                <TextBlock Text="CPU" FontWeight="Bold" FontSize="11" Grid.Column="1" Foreground="Gray"/>
+                                                <TextBlock Text="RAM" FontWeight="Bold" FontSize="11" Grid.Column="2" Foreground="Gray"/>
+                                            </Grid>
+
+                                            <Border Height="1" Background="#FFD1DC"/>
+
+                                            <ItemsControl ItemsSource="{Binding SubProcesses}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="local:SubProcessInfo">
+                                                        <Grid Margin="0,2">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="60"/>
+                                                                <ColumnDefinition Width="70"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Text="{Binding Pid}" FontSize="11" Grid.Column="0" Foreground="#AEC6CF"/>
+                                                            <TextBlock Text="{Binding CpuDisplay}" FontSize="11" Grid.Column="1" FontWeight="Medium"/>
+                                                            <TextBlock Text="{Binding Memory}" FontSize="11" Grid.Column="2" HorizontalAlignment="Right"/>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                            <TextBlock Text="✨ Live updates active" FontSize="9" HorizontalAlignment="Center" Foreground="LightGray" Margin="0,10,0,0"/>
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                            
+                            <TextBlock Text="{x:Bind CpuUsageDisplay, Mode=OneWay}" Grid.Column="2" VerticalAlignment="Center" />
+                            <TextBlock Text="{x:Bind MemoryUsage, Mode=OneWay}" Grid.Column="3" VerticalAlignment="Center"/>
+                            <TextBlock Text="{x:Bind Status, Mode=OneWay}" Grid.Column="4" VerticalAlignment="Center"/>
+
                             <AnimatedVisualPlayer x:Name="HeartBurstPlayer" 
-                                                  Grid.Column="4" 
+                                                  Grid.Column="5" 
                                                   Width="80" Height="80" 
                                                   HorizontalAlignment="Center"
                                                   VerticalAlignment="Center"
@@ -188,10 +279,6 @@
                                                   Canvas.ZIndex="10">
                                 <lottie:LottieVisualSource UriSource="ms-appx:///Assets/Lottie/HeartBurst.json"/>
                             </AnimatedVisualPlayer>
-
-                            <TextBlock Text="{x:Bind CpuUsageDisplay, Mode=OneWay}" Grid.Column="1" VerticalAlignment="Center"/>
-                            <TextBlock Text="{x:Bind MemoryUsage, Mode=OneWay}" Grid.Column="2" VerticalAlignment="Center"/>
-                            <TextBlock Text="{x:Bind Status, Mode=OneWay}" Grid.Column="3" VerticalAlignment="Center"/>
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>

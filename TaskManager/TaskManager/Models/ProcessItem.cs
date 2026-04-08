@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml.Media;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -10,7 +11,8 @@ namespace TaskManager
     /// </summary>
     public class ProcessItem : INotifyPropertyChanged
     {
-        public int Id { get; set; }
+        public List<SubProcessInfo> SubProcesses { get; set; } = new();
+        public int PidCount => SubProcesses?.Count ?? 0;
         public string Name { get; set; } = string.Empty;
         public string MemoryUsage { get; set; } = string.Empty;
         public string Status { get; set; } = "Active";
@@ -48,6 +50,22 @@ namespace TaskManager
             set { _iconSource = value; OnPropertyChanged(); }
         }
 
+        private bool _isFlyoutOpen;
+        public bool IsFlyoutOpen
+        {
+            get => _isFlyoutOpen;
+            set { _isFlyoutOpen = value; OnPropertyChanged(); }
+        }
+    }
 
+    /// <summary>
+    /// Represents information about a subprocess, including its process ID, CPU usage, and memory consumption.
+    /// </summary>
+    public class SubProcessInfo
+    {
+        public int Pid { get; set; }
+        public double Cpu { get; set; }
+        public string Memory { get; set; }
+        public string CpuDisplay => $"{Cpu:F1}%"; 
     }
 }

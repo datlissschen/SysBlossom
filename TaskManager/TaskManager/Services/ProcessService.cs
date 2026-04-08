@@ -30,6 +30,7 @@ namespace TaskManager
         public List<ProcessItem> GetProcesses()
         {
             var processList = new List<ProcessItem>();
+            var rawList = new List<dynamic>();
             var allProcesses = Process.GetProcesses();
             var currentTime = DateTime.UtcNow;
 
@@ -59,14 +60,14 @@ namespace TaskManager
                     }
                     catch { /* Access Denied for path */ }
 
-                    processList.Add(new ProcessItem
+                    rawList.Add(new
                     {
                         Id = p.Id,
                         Name = p.ProcessName,
-                        CpuUsage = Math.Clamp(cpuPercent, 0, 100),
-                        MemoryUsage = $"{(p.WorkingSet64 / 1024 / 1024)} MB",
-                        Status = p.Responding ? "Active" : "Hung",
-                        ImagePath = fullPath
+                        Cpu = Math.Clamp(cpuPercent, 0, 1000), 
+                        MemoryRaw = p.WorkingSet64, 
+                        IsResponding = p.Responding,
+                        Path = p.MainModule?.FileName
                     });
                 }
                 catch
@@ -79,22 +80,43 @@ namespace TaskManager
             var ghostIds = _history.Keys.Where(id => !activeIds.Contains(id)).ToList();
             foreach (var id in ghostIds) _history.Remove(id);
 
-            return processList
-                .OrderByDescending(x => x.CpuUsage)
-                .ThenBy(x => x.Name)
-                .ToList();
+            var groupedList = rawList
+            .GroupBy(p => p.Name)
+            .Select(group => new ProcessItem
+            {
+                Name = group.Key,
+                // create a list of subprocesses for each process group
+                SubProcesses = group.Select(x => new SubProcessInfo
+                {
+                    Pid = (int)x.Id,
+                    Cpu = (double)x.Cpu,
+                    Memory = $"{(long)x.MemoryRaw / 1024 / 1024} MB"
+                }).ToList(),
+
+                CpuUsage = group.Sum(x => (double)x.Cpu),
+                MemoryUsage = $"{(group.Sum(x => (long)x.MemoryRaw) / 1024 / 1024)} MB",
+                Status = group.Any(x => (bool)x.IsResponding) ? "Active" : "Hung",
+                ImagePath = group.FirstOrDefault(x => x.Path != null)?.Path
+            })
+            .OrderByDescending(x => x.CpuUsage)
+            .ToList();
+
+            return groupedList;
         }
 
         /// <summary>
         /// Method to kill the task via the given id.
         /// </summary>
         /// <param name="id"></param>
-        public bool KillProcess(int id)
+        public bool KillProcesses(List<int> pids)
         {
             try
             {
-                var p = Process.GetProcessById(id);
-                p.Kill();
+                foreach (var pid in pids)
+                {
+                    var p = Process.GetProcessById(pid);
+                    p.Kill();
+                }
                 return true;
             }
             catch (Exception ex)

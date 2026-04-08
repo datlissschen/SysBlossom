@@ -165,39 +165,43 @@ namespace TaskManager
             var sortedList = sortedQuery.ToList();
 
             // SAVE SELECTION
-            var selectedIds = ProcessListView.SelectedItems
+            var selectedNames = ProcessListView.SelectedItems
                 .Cast<ProcessItem>()
-                .Select(p => p.Id)
+                .Select(p => p.Name)
                 .ToList();
 
             // YNC LOGIC (In-place update)
-            var currentItems = Processes.ToDictionary(p => p.Id);
-            var newIds = sortedList.Select(p => p.Id).ToHashSet();
+            var currentItems = Processes.ToDictionary(p => p.Name);
+            var newIds = sortedList.Select(p => p.Name).ToHashSet();
 
             // Remove old
             for (int i = Processes.Count - 1; i >= 0; i--)
             {
-                if (!newIds.Contains(Processes[i].Id)) Processes.RemoveAt(i);
+                if (!newIds.Contains(Processes[i].Name)) Processes.RemoveAt(i);
             }
+            bool isUserBusy = Processes.Any(p => p.IsFlyoutOpen);
 
             // Update/Move/Add
             for (int i = 0; i < sortedList.Count; i++)
             {
                 var newItem = sortedList[i];
-                if (currentItems.TryGetValue(newItem.Id, out var existingItem))
+                if (currentItems.TryGetValue(newItem.Name, out var existingItem))
                 {
+                    // Update values and ids but keep reference to preserve UI state
                     existingItem.CpuUsage = newItem.CpuUsage;
                     existingItem.MemoryUsage = newItem.MemoryUsage;
                     existingItem.Status = newItem.Status;
+                    existingItem.SubProcesses = newItem.SubProcesses;
 
-                    int oldIndex = Processes.IndexOf(existingItem);
-                    if (oldIndex != i) Processes.Move(oldIndex, i);
+                    if (!isUserBusy)
+                    {
+                        int oldIndex = Processes.IndexOf(existingItem);
+                        if (oldIndex != i) Processes.Move(oldIndex, i);
+                    }
                 }
                 else
                 {
                     Processes.Insert(i, newItem);
-
-                    // Only queue the icon if it's not already cached
                     if (!string.IsNullOrEmpty(newItem.ImagePath) && !IconCache.TryGetIcon(newItem.ImagePath, out _))
                     {
                         _iconQueue.Enqueue(newItem);
@@ -207,13 +211,10 @@ namespace TaskManager
 
             // clear and re-add only if the selection actually changed or items moved
             ProcessListView.SelectedItems.Clear();
-            foreach (var id in selectedIds)
+            foreach (var name in selectedNames)
             {
-                var itemToReselect = Processes.FirstOrDefault(p => p.Id == id);
-                if (itemToReselect != null)
-                {
-                    ProcessListView.SelectedItems.Add(itemToReselect);
-                }
+                var itemToReselect = Processes.FirstOrDefault(p => p.Name == name);
+                if (itemToReselect != null) ProcessListView.SelectedItems.Add(itemToReselect);
             }
             // get data
             double totalCpu = sortedList.Sum(p => p.CpuUsage);
@@ -326,10 +327,10 @@ namespace TaskManager
 
             foreach (var process in selectedProcesses)
             {
-                if (_service.KillProcess(process.Id))
-                {
-                    atLeastOneKilled = true;
-                }
+                // get all pids for the process group
+                var pidsToKill = process.SubProcesses.Select(s => s.Pid).ToList();
+
+                if (_service.KillProcesses(pidsToKill)) atLeastOneKilled = true;
             }
 
             // Refresh the list if we actually closed something
@@ -411,6 +412,34 @@ namespace TaskManager
                 if (result != null) return result;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Handles the Opening event of a Flyout control to update the associated data context state.
+        /// </summary>
+        /// <remarks>This method is typically used to synchronize the UI state with the underlying data
+        /// model when a Flyout is opened. It assumes that the Flyout's Target has a DataContext of type
+        /// ProcessItem.</remarks>
+        /// <param name="sender">The source of the event, expected to be a Flyout control whose Opening event is being handled.</param>
+        /// <param name="e">The event data associated with the Opening event.</param>
+        private void Flyout_Opening(object sender, object e)
+        {
+            if ((sender as Flyout).Target.DataContext is ProcessItem item)
+            {
+                item.IsFlyoutOpen = true;
+            }
+        }
+        /// <summary>
+        /// Handles the Closing event of a Flyout control to update the associated data context state.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Flyout_Closed(object sender, object e)
+        {
+            if ((sender as Flyout).Target.DataContext is ProcessItem item)
+            {
+                item.IsFlyoutOpen = false;
+            }
         }
     }
 }
