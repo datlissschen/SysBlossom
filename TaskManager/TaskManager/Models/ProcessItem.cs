@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml.Media;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -10,7 +11,7 @@ namespace TaskManager
     /// </summary>
     public class ProcessItem : INotifyPropertyChanged
     {
-        public int Id { get; set; }
+        public List<int> Pids { get; set; } = new(); 
         public string Name { get; set; } = string.Empty;
         public string MemoryUsage { get; set; } = string.Empty;
         public string Status { get; set; } = "Active";
