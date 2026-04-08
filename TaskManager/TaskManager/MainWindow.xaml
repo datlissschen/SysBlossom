@@ -74,6 +74,9 @@
                     </AnimatedVisualPlayer>
                     <TextBlock x:Name="RefreshButtonText" Text="Refresh"/>
                 </StackPanel>
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="Here you can refresh the whole task manager ✨" />
+                </ToolTipService.ToolTip>
             </Button>
 
             <Button x:Name="KillButton" Content="End Task" Click="KillButton_Click" 
@@ -85,6 +88,9 @@
                     <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFE3EF"/>
                     <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFE3EF"/>
                 </Button.Resources>
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="If you select a process an click here, it is killed ✨" />
+                </ToolTipService.ToolTip>
             </Button>
         </StackPanel>
 
@@ -182,8 +188,52 @@
                                 <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" FontSize="14" FontWeight="Medium"/>
                             </StackPanel>
 
-                            <TextBlock Text="{x:Bind PidCount, Mode=OneWay}" Grid.Column="1" VerticalAlignment="Center"/>
-                            <TextBlock Text="{x:Bind CpuUsageDisplay, Mode=OneWay}" Grid.Column="2" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" 
+                                VerticalAlignment="Center" 
+                                HorizontalAlignment="Center"
+                                Padding="8,2"
+                                Background="#E0BBE4" 
+                                CornerRadius="10"
+                                BorderThickness="0">
+
+                                <Button.Resources>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF69B4"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#D1478B"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFE3EF"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFE3EF"/>
+                                </Button.Resources>
+
+                                <ToolTipService.ToolTip>
+                                    <ToolTip Content="This is the number of subprocesses. Click for more info! ✨" />
+                                </ToolTipService.ToolTip>
+
+                                <Button.Content>
+                                    <TextBlock Text="{x:Bind PidCount, Mode=OneWay}" 
+                                       Foreground="White" 
+                                       FontWeight="Bold"/>
+                                </Button.Content>
+
+                                <Button.Flyout>
+                                    <Flyout>
+                                        <StackPanel Spacing="10" MinWidth="150">
+                                            <TextBlock Text="🌸 Subprocesses (PIDs)" FontWeight="Bold" Foreground="#FF69B4"/>
+                                            <Border Height="1" Background="#FFD1DC"/>
+
+                                            <ItemsControl ItemsSource="{x:Bind Pids}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}" FontSize="12" Margin="0,2"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                            <TextBlock Text="Click anywhere to close" FontSize="10" Foreground="Gray" Margin="0,10,0,0"/>
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                            
+                            <TextBlock Text="{x:Bind CpuUsageDisplay, Mode=OneWay}" Grid.Column="2" VerticalAlignment="Center" />
                             <TextBlock Text="{x:Bind MemoryUsage, Mode=OneWay}" Grid.Column="3" VerticalAlignment="Center"/>
                             <TextBlock Text="{x:Bind Status, Mode=OneWay}" Grid.Column="4" VerticalAlignment="Center"/>
 
