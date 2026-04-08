@@ -119,7 +119,7 @@
             </Grid>
         </Border>
 
-        <Border Grid.Row="2" Background="White" CornerRadius="25" Padding="25" BorderBrush="{StaticResource SecondaryKawaiiBrush}" BorderThickness="2">
+        <Border Grid.Row="1" Background="White" CornerRadius="25" Padding="25" BorderBrush="{StaticResource SecondaryKawaiiBrush}" BorderThickness="2">
             <ListView x:Name="ProcessListView" ItemsSource="{x:Bind Processes, Mode=OneWay}" SelectionMode="Extended" Background="Transparent" SelectionChanged="ProcessListView_SelectionChanged">
                 <ListView.Resources>
                     <SolidColorBrush x:Key="ListViewItemForeground" Color="#4A4A4A"/>
@@ -215,6 +215,16 @@
 
                                 <Button.Flyout>
                                     <Flyout Opening="Flyout_Opening" Closed="Flyout_Closed">
+                                        <Flyout.FlyoutPresenterStyle>
+                                            <Style TargetType="FlyoutPresenter">
+                                                <Setter Property="Background" Value="White"/>
+                                                <Setter Property="BorderBrush" Value="{StaticResource PrimaryKawaiiBrush}"/>
+                                                <Setter Property="BorderThickness" Value="2"/>
+                                                <Setter Property="CornerRadius" Value="15"/>
+                                                <Setter Property="Padding" Value="15"/>
+                                            </Style>
+                                        </Flyout.FlyoutPresenterStyle>
+
                                         <StackPanel Spacing="10" MinWidth="250">
                                             <TextBlock Text="🌸 Subprocess Details" FontWeight="Bold" Foreground="#FF69B4" FontSize="16"/>
 
@@ -224,14 +234,14 @@
                                                     <ColumnDefinition Width="70"/>
                                                     <ColumnDefinition Width="*"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="PID" FontWeight="Bold" FontSize="11" Grid.Column="0"/>
-                                                <TextBlock Text="CPU" FontWeight="Bold" FontSize="11" Grid.Column="1"/>
-                                                <TextBlock Text="RAM" FontWeight="Bold" FontSize="11" Grid.Column="2"/>
+                                                <TextBlock Text="PID" FontWeight="Bold" FontSize="11" Grid.Column="0" Foreground="Gray"/>
+                                                <TextBlock Text="CPU" FontWeight="Bold" FontSize="11" Grid.Column="1" Foreground="Gray"/>
+                                                <TextBlock Text="RAM" FontWeight="Bold" FontSize="11" Grid.Column="2" Foreground="Gray"/>
                                             </Grid>
 
                                             <Border Height="1" Background="#FFD1DC"/>
 
-                                            <ItemsControl ItemsSource="{x:Bind SubProcesses}">
+                                            <ItemsControl ItemsSource="{Binding SubProcesses}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate x:DataType="local:SubProcessInfo">
                                                         <Grid Margin="0,2">
@@ -240,13 +250,15 @@
                                                                 <ColumnDefinition Width="70"/>
                                                                 <ColumnDefinition Width="*"/>
                                                             </Grid.ColumnDefinitions>
-                                                            <TextBlock Text="{x:Bind Pid}" FontSize="11" Grid.Column="0" Foreground="Gray"/>
-                                                            <TextBlock Text="{x:Bind CpuDisplay}" FontSize="11" Grid.Column="1" Foreground="#779ECB"/>
-                                                            <TextBlock Text="{x:Bind Memory}" FontSize="11" Grid.Column="2"/>
+                                                            <TextBlock Text="{Binding Pid}" FontSize="11" Grid.Column="0" Foreground="#AEC6CF"/>
+                                                            <TextBlock Text="{Binding CpuDisplay}" FontSize="11" Grid.Column="1" FontWeight="Medium"/>
+                                                            <TextBlock Text="{Binding Memory}" FontSize="11" Grid.Column="2" HorizontalAlignment="Right"/>
                                                         </Grid>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
+
+                                            <TextBlock Text="✨ Live updates active" FontSize="9" HorizontalAlignment="Center" Foreground="LightGray" Margin="0,10,0,0"/>
                                         </StackPanel>
                                     </Flyout>
                                 </Button.Flyout>
