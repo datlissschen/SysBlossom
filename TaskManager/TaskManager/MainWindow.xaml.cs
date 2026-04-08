@@ -179,6 +179,7 @@ namespace TaskManager
             {
                 if (!newIds.Contains(Processes[i].Name)) Processes.RemoveAt(i);
             }
+            bool isUserBusy = Processes.Any(p => p.IsFlyoutOpen);
 
             // Update/Move/Add
             for (int i = 0; i < sortedList.Count; i++)
@@ -192,8 +193,11 @@ namespace TaskManager
                     existingItem.Status = newItem.Status;
                     existingItem.SubProcesses = newItem.SubProcesses;
 
-                    int oldIndex = Processes.IndexOf(existingItem);
-                    if (oldIndex != i) Processes.Move(oldIndex, i);
+                    if (!isUserBusy)
+                    {
+                        int oldIndex = Processes.IndexOf(existingItem);
+                        if (oldIndex != i) Processes.Move(oldIndex, i);
+                    }
                 }
                 else
                 {
@@ -408,6 +412,34 @@ namespace TaskManager
                 if (result != null) return result;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Handles the Opening event of a Flyout control to update the associated data context state.
+        /// </summary>
+        /// <remarks>This method is typically used to synchronize the UI state with the underlying data
+        /// model when a Flyout is opened. It assumes that the Flyout's Target has a DataContext of type
+        /// ProcessItem.</remarks>
+        /// <param name="sender">The source of the event, expected to be a Flyout control whose Opening event is being handled.</param>
+        /// <param name="e">The event data associated with the Opening event.</param>
+        private void Flyout_Opening(object sender, object e)
+        {
+            if ((sender as Flyout).Target.DataContext is ProcessItem item)
+            {
+                item.IsFlyoutOpen = true;
+            }
+        }
+        /// <summary>
+        /// Handles the Closing event of a Flyout control to update the associated data context state.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Flyout_Closed(object sender, object e)
+        {
+            if ((sender as Flyout).Target.DataContext is ProcessItem item)
+            {
+                item.IsFlyoutOpen = false;
+            }
         }
     }
 }

@@ -214,7 +214,7 @@
                                 </Button.Content>
 
                                 <Button.Flyout>
-                                    <Flyout>
+                                    <Flyout Opening="Flyout_Opening" Closed="Flyout_Closed">
                                         <StackPanel Spacing="10" MinWidth="250">
                                             <TextBlock Text="🌸 Subprocess Details" FontWeight="Bold" Foreground="#FF69B4" FontSize="16"/>
 

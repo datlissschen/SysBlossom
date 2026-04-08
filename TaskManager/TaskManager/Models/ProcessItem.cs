@@ -49,6 +49,13 @@ namespace TaskManager
             get => _iconSource;
             set { _iconSource = value; OnPropertyChanged(); }
         }
+
+        private bool _isFlyoutOpen;
+        public bool IsFlyoutOpen
+        {
+            get => _isFlyoutOpen;
+            set { _isFlyoutOpen = value; OnPropertyChanged(); }
+        }
     }
 
     /// <summary>
