@@ -81,11 +81,19 @@ namespace TaskManager
             foreach (var id in ghostIds) _history.Remove(id);
 
             var groupedList = rawList
-            .GroupBy(p => p.Name).Select(group => new ProcessItem
+            .GroupBy(p => p.Name)
+            .Select(group => new ProcessItem
             {
-                Pids = group.Select(x => (int)x.Id).ToList(),
                 Name = group.Key,
-                CpuUsage = group.Sum(x => (double)x.Cpu), // add CPU usage of all processes with the same name
+                // create a list of subprocesses for each process group
+                SubProcesses = group.Select(x => new SubProcessInfo
+                {
+                    Pid = (int)x.Id,
+                    Cpu = (double)x.Cpu,
+                    Memory = $"{(long)x.MemoryRaw / 1024 / 1024} MB"
+                }).ToList(),
+
+                CpuUsage = group.Sum(x => (double)x.Cpu),
                 MemoryUsage = $"{(group.Sum(x => (long)x.MemoryRaw) / 1024 / 1024)} MB",
                 Status = group.Any(x => (bool)x.IsResponding) ? "Active" : "Hung",
                 ImagePath = group.FirstOrDefault(x => x.Path != null)?.Path

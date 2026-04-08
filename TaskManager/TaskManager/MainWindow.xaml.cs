@@ -190,7 +190,7 @@ namespace TaskManager
                     existingItem.CpuUsage = newItem.CpuUsage;
                     existingItem.MemoryUsage = newItem.MemoryUsage;
                     existingItem.Status = newItem.Status;
-                    existingItem.Pids = newItem.Pids;
+                    existingItem.SubProcesses = newItem.SubProcesses;
 
                     int oldIndex = Processes.IndexOf(existingItem);
                     if (oldIndex != i) Processes.Move(oldIndex, i);
@@ -323,7 +323,10 @@ namespace TaskManager
 
             foreach (var process in selectedProcesses)
             {
-                if (_service.KillProcesses(process.Pids)) atLeastOneKilled = true;
+                // get all pids for the process group
+                var pidsToKill = process.SubProcesses.Select(s => s.Pid).ToList();
+
+                if (_service.KillProcesses(pidsToKill)) atLeastOneKilled = true;
             }
 
             // Refresh the list if we actually closed something
