@@ -165,30 +165,32 @@ namespace TaskManager
             var sortedList = sortedQuery.ToList();
 
             // SAVE SELECTION
-            var selectedIds = ProcessListView.SelectedItems
+            var selectedNames = ProcessListView.SelectedItems
                 .Cast<ProcessItem>()
-                .Select(p => p.Id)
+                .Select(p => p.Name)
                 .ToList();
 
             // YNC LOGIC (In-place update)
-            var currentItems = Processes.ToDictionary(p => p.Id);
-            var newIds = sortedList.Select(p => p.Id).ToHashSet();
+            var currentItems = Processes.ToDictionary(p => p.Name);
+            var newIds = sortedList.Select(p => p.Name).ToHashSet();
 
             // Remove old
             for (int i = Processes.Count - 1; i >= 0; i--)
             {
-                if (!newIds.Contains(Processes[i].Id)) Processes.RemoveAt(i);
+                if (!newIds.Contains(Processes[i].Name)) Processes.RemoveAt(i);
             }
 
             // Update/Move/Add
             for (int i = 0; i < sortedList.Count; i++)
             {
                 var newItem = sortedList[i];
-                if (currentItems.TryGetValue(newItem.Id, out var existingItem))
+                if (currentItems.TryGetValue(newItem.Name, out var existingItem))
                 {
+                    // Update values and ids but keep reference to preserve UI state
                     existingItem.CpuUsage = newItem.CpuUsage;
                     existingItem.MemoryUsage = newItem.MemoryUsage;
                     existingItem.Status = newItem.Status;
+                    existingItem.Pids = newItem.Pids;
 
                     int oldIndex = Processes.IndexOf(existingItem);
                     if (oldIndex != i) Processes.Move(oldIndex, i);
@@ -196,8 +198,6 @@ namespace TaskManager
                 else
                 {
                     Processes.Insert(i, newItem);
-
-                    // Only queue the icon if it's not already cached
                     if (!string.IsNullOrEmpty(newItem.ImagePath) && !IconCache.TryGetIcon(newItem.ImagePath, out _))
                     {
                         _iconQueue.Enqueue(newItem);
@@ -207,13 +207,10 @@ namespace TaskManager
 
             // clear and re-add only if the selection actually changed or items moved
             ProcessListView.SelectedItems.Clear();
-            foreach (var id in selectedIds)
+            foreach (var name in selectedNames)
             {
-                var itemToReselect = Processes.FirstOrDefault(p => p.Id == id);
-                if (itemToReselect != null)
-                {
-                    ProcessListView.SelectedItems.Add(itemToReselect);
-                }
+                var itemToReselect = Processes.FirstOrDefault(p => p.Name == name);
+                if (itemToReselect != null) ProcessListView.SelectedItems.Add(itemToReselect);
             }
             // get data
             double totalCpu = sortedList.Sum(p => p.CpuUsage);
@@ -326,10 +323,7 @@ namespace TaskManager
 
             foreach (var process in selectedProcesses)
             {
-                if (_service.KillProcess(process.Id))
-                {
-                    atLeastOneKilled = true;
-                }
+                if (_service.KillProcesses(process.Pids)) atLeastOneKilled = true;
             }
 
             // Refresh the list if we actually closed something
