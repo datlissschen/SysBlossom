@@ -29,7 +29,7 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <StackPanel Orientation="Horizontal" Spacing="15" Grid.Row="0" Margin="0,0,0,15" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="15" Grid.Row="0" Margin="0,0,0,10" VerticalAlignment="Center">
             <AnimatedVisualPlayer x:Name="MascotPlayer" Width="60" Height="60" AutoPlay="True">
                 <lottie:LottieVisualSource x:Name="MascotSource" UriSource="ms-appx:///Assets/Lottie/KawaiiMascot.json"/>
             </AnimatedVisualPlayer>
@@ -92,32 +92,33 @@
                     <ToolTip Content="If you select a process an click here, it is killed ✨" />
                 </ToolTipService.ToolTip>
             </Button>
+
+            <Border Grid.Column="1" Margin="20,0,0,0" Padding="15" Background="White" CornerRadius="20" BorderBrush="{StaticResource PrimaryKawaiiBrush}" BorderThickness="2">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Margin="5" Width ="230" VerticalAlignment="Center">
+                        <TextBlock Text="☁️ Total CPU" FontSize="12" Foreground="#779ECB" FontWeight="Bold"/>
+                        <Canvas x:Name="CpuCanvas" Height="40" VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
+                            <Polyline x:Name="CpuGraphLine" Stroke="#779ECB" StrokeThickness="3" StrokeLineJoin="Round"/>
+                            <TextBlock x:Name="CpuSparkle" Text="✨" Foreground="Gold" FontSize="16" Visibility="Collapsed"/>
+                        </Canvas>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1" Margin="5" Width ="230" VerticalAlignment="Center">
+                        <TextBlock Text="☁️ Total RAM" FontSize="12" Foreground="#FFB7C5" FontWeight="Bold"/>
+                        <Canvas x:Name="RamCanvas" Height="40" VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
+                            <Polyline x:Name="RamGraphLine" Stroke="#FFB7C5" StrokeThickness="3" StrokeLineJoin="Round"/>
+                            <TextBlock x:Name="RamSparkle" Text="✧" Foreground="#FF69B4" FontSize="18" Visibility="Collapsed"/>
+                        </Canvas>
+                    </StackPanel>
+                </Grid>
+            </Border>
         </StackPanel>
 
-        <Border Grid.Column="1" Margin="20,0,0,0" Padding="15" Background="White" CornerRadius="20" BorderBrush="{StaticResource PrimaryKawaiiBrush}" BorderThickness="2">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <StackPanel Grid.Row="0" Margin="5" VerticalAlignment="Center">
-                    <TextBlock Text="☁️ Total CPU" FontSize="12" Foreground="#779ECB" FontWeight="Bold"/>
-                    <Canvas x:Name="CpuCanvas" Height="40" VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
-                        <Polyline x:Name="CpuGraphLine" Stroke="#779ECB" StrokeThickness="3" StrokeLineJoin="Round"/>
-                        <TextBlock x:Name="CpuSparkle" Text="✨" Foreground="Gold" FontSize="16" Visibility="Collapsed"/>
-                    </Canvas>
-                </StackPanel>
-
-                <StackPanel Grid.Row="1" Margin="5" VerticalAlignment="Center">
-                    <TextBlock Text="☁️ Total RAM" FontSize="12" Foreground="#FFB7C5" FontWeight="Bold"/>
-                    <Canvas x:Name="RamCanvas" Height="40" VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
-                        <Polyline x:Name="RamGraphLine" Stroke="#FFB7C5" StrokeThickness="3" StrokeLineJoin="Round"/>
-                        <TextBlock x:Name="RamSparkle" Text="✧" Foreground="#FF69B4" FontSize="18" Visibility="Collapsed"/>
-                    </Canvas>
-                </StackPanel>
-            </Grid>
-        </Border>
 
         <Border Grid.Row="1" Background="White" CornerRadius="25" Padding="25" BorderBrush="{StaticResource SecondaryKawaiiBrush}" BorderThickness="2">
             <ListView x:Name="ProcessListView" ItemsSource="{x:Bind Processes, Mode=OneWay}" SelectionMode="Extended" Background="Transparent" SelectionChanged="ProcessListView_SelectionChanged">
@@ -156,12 +157,12 @@
                     <DataTemplate>
                         <Grid Margin="12,0,0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200"/>
-                                <ColumnDefinition Width="50"/>
+                                <ColumnDefinition Width="250"/>
                                 <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="90"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="🌸 Process" FontWeight="Bold" Grid.Column="0"/>
                             <TextBlock Text="#" FontWeight="Bold" Grid.Column="1"/>
@@ -176,12 +177,12 @@
                     <DataTemplate x:DataType="local:ProcessItem">
                         <Grid Height="45">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200"/>
-                                <ColumnDefinition Width="50"/>
+                                <ColumnDefinition Width="250"/>
                                 <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="90"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Orientation="Horizontal" Grid.Column="0" Spacing="12">
                                 <Image Source="{x:Bind IconSource, Mode=OneWay}" Width="28" Height="28" VerticalAlignment="Center"/>
