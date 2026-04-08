@@ -11,7 +11,8 @@ namespace TaskManager
     /// </summary>
     public class ProcessItem : INotifyPropertyChanged
     {
-        public List<int> Pids { get; set; } = new(); 
+        public List<int> Pids { get; set; } = new();
+        public int PidCount => Pids?.Count ?? 0;
         public string Name { get; set; } = string.Empty;
         public string MemoryUsage { get; set; } = string.Empty;
         public string Status { get; set; } = "Active";
