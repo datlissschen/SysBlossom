@@ -253,6 +253,11 @@ namespace TaskManager
                 item.IsFlyoutOpen = false;
             }
         }
+
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            ViewModel.FilterText = (sender as TextBox)?.Text ?? string.Empty;
+        }
     }
 }
 
