@@ -106,6 +106,10 @@ namespace TaskManager
             // calculating totals
             TotalCpu = sortedList.Sum(p => p.CpuUsage);
             TotalRam = sortedList.Sum(p => ParseMemory(p.MemoryUsage));
+
+            // Values have changed, notify UI to update header display
+            OnPropertyChanged(nameof(TotalCpuDisplay));
+            OnPropertyChanged(nameof(TotalRamDisplay));
         }
 
         private long ParseMemory(string memString) =>
@@ -114,6 +118,14 @@ namespace TaskManager
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? name = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        // formatting CPU for header display
+        public string TotalCpuDisplay => $"{TotalCpu:F1}%";
+
+        // formatting RAM for header display
+        public string TotalRamDisplay => TotalRam > 1024
+            ? $"{(TotalRam / 1024.0):F2} GB"
+            : $"{TotalRam:F0} MB";
 
         /// <summary>
         /// Method to start a background worker that continuously processes the icon queue, extracting icons for processes and updating the UI accordingly. 
