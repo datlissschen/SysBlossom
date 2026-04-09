@@ -1,4 +1,4 @@
-# 🌸 Cute  Windows Taskmanager
+# 🌸 SysBlossom: A Cute  Windows Processmanager
 
 CuteTaskmanager is a specialized system monitor for Windows that blends professional performance tracking with a high-end "Kawaii" aesthetic. It transforms the often-sterile experience of process management into something visually delightful, interactive, and fun.
 ## Key Features
