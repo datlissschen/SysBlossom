@@ -126,7 +126,13 @@ namespace TaskManager
             {
                 if (_iconQueue.TryDequeue(out var item))
                 {
-                    if (item.IconSource == null && !string.IsNullOrEmpty(item.ImagePath))
+                    if (IconCache.TryGetIcon(item.ImagePath, out var cachedIcon))
+                    {
+                        _dispatcher.TryEnqueue(() => {
+                            item.IconSource = cachedIcon;
+                        });
+                    }
+                    else if (item.IconSource == null && !string.IsNullOrEmpty(item.ImagePath))
                     {
                         await Task.Run(() =>
                         {

@@ -7,6 +7,7 @@ namespace TaskManager.Helper
     public static class IconCache
     {
         // a file path as the key and the ImageSource as the value
+
         private static readonly Dictionary<string, ImageSource> _iconCache = new();
 
         public static bool TryGetIcon(string path, out ImageSource? icon)
