@@ -129,6 +129,11 @@
 
         <Border Grid.Row="1" Background="White" CornerRadius="25" Padding="25" BorderBrush="{StaticResource SecondaryKawaiiBrush}" BorderThickness="2">
             <ListView x:Name="ProcessListView" ItemsSource="{x:Bind ViewModel.Processes, Mode=OneWay}" SelectionMode="Extended" Background="Transparent" SelectionChanged="ProcessListView_SelectionChanged">
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <ItemsStackPanel ItemsUpdatingScrollMode="KeepItemsInView" />
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
                 <ListView.Resources>
                     <SolidColorBrush x:Key="ListViewItemForeground" Color="#4A4A4A"/>
                     <SolidColorBrush x:Key="ListViewItemForegroundPointerOver" Color="#FF69B4"/>
