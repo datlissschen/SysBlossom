@@ -7,7 +7,7 @@ using Windows.Graphics.Imaging;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System.Runtime.InteropServices.WindowsRuntime;
 
-namespace TaskManager
+namespace TaskManager.Helper
 {
     public static class IconHelper
     {
