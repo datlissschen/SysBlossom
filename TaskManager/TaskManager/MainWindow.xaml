@@ -128,7 +128,12 @@
 
 
         <Border Grid.Row="1" Background="White" CornerRadius="25" Padding="25" BorderBrush="{StaticResource SecondaryKawaiiBrush}" BorderThickness="2">
-            <ListView x:Name="ProcessListView" ItemsSource="{x:Bind ViewModel.Processes, Mode=OneWay}" SelectionMode="Extended" Background="Transparent" SelectionChanged="ProcessListView_SelectionChanged">
+            <ListView x:Name="ProcessListView" 
+                      ItemsSource="{x:Bind ViewModel.Processes, Mode=OneWay}" 
+                      Header="{x:Bind ViewModel, Mode=OneWay}"
+                      SelectionMode="Extended" 
+                      Background="Transparent" 
+                      SelectionChanged="ProcessListView_SelectionChanged">
                 <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
                         <ItemsStackPanel ItemsUpdatingScrollMode="KeepItemsInView" />
@@ -166,7 +171,7 @@
                 </ListView.ItemContainerStyle>
 
                 <ListView.HeaderTemplate>
-                    <DataTemplate>
+                    <DataTemplate x:DataType="local:MainViewModel">
                         <Grid Margin="12,0,0,5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="250"/>
@@ -176,33 +181,42 @@
                                 <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="90"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="🌸 Process" FontWeight="Bold" Grid.Column="0">
-                                <ToolTipService.ToolTip>
-                                    <ToolTip Content="This is the process name." />
-                                </ToolTipService.ToolTip>       
-                            </TextBlock>
-                            <TextBlock Text="#" FontWeight="Bold" Grid.Column="1">  
-                            </TextBlock>
-                            <TextBlock Text="⚡ CPU" FontWeight="Bold" Grid.Column="2">  
-                                <ToolTipService.ToolTip>
-                                    <ToolTip Content="This is the CPU Useage name." />
-                                </ToolTipService.ToolTip>
-                            </TextBlock>
-                            <TextBlock Text="🧠 Memory" FontWeight="Bold" Grid.Column="3">  
-                                <ToolTipService.ToolTip>
-                                    <ToolTip Content="This is the Memory Useage." />
-                                </ToolTipService.ToolTip>
+
+                            <TextBlock Text="🌸 Process" FontSize="12" Foreground="#779ECB" FontWeight="Bold" Grid.Column="0">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="This is the process name." />
+                </ToolTipService.ToolTip>
                             </TextBlock>
 
-                            <TextBlock Text="✨ Status" FontWeight="Bold" Grid.Column="4">  
+                            <TextBlock Text="#" FontWeight="Bold" Grid.Column="1" />
+
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="⚡ CPU" FontSize="12" Foreground="#779ECB" FontWeight="Bold" />
+                                <TextBlock Text="{x:Bind TotalCpuDisplay, Mode=OneWay}" 
+                           FontSize="12" Foreground="#779ECB" FontWeight="Normal"/>
                                 <ToolTipService.ToolTip>
-                                    <ToolTip Content="This is the Status of the process." />
+                                    <ToolTip Content="This is the total CPU Usage." />
                                 </ToolTipService.ToolTip>
-                            </TextBlock>  
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="3">
+                                <TextBlock Text="🧠 RAM" FontSize="12" Foreground="#779ECB" FontWeight="Bold" />
+                                <TextBlock Text="{x:Bind TotalRamDisplay, Mode=OneWay}" 
+                           FontSize="12" Foreground="#FFB7C5" FontWeight="Normal"/>
+                                <ToolTipService.ToolTip>
+                                    <ToolTip Content="This is the total RAM Usage." />
+                                </ToolTipService.ToolTip>
+                            </StackPanel>
+
+                            <TextBlock Text="✨ Status" FontSize="12" Foreground="#779ECB" FontWeight="Bold" Grid.Column="4">  
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="This is the Status of the process." />
+                </ToolTipService.ToolTip>
+                            </TextBlock>
                         </Grid>
                     </DataTemplate>
                 </ListView.HeaderTemplate>
-
+                
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="local:ProcessItem">
                         <Grid Height="45">
