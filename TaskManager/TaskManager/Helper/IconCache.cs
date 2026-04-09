@@ -1,26 +1,37 @@
 ﻿using System.Collections.Concurrent;
-using System.Collections.Generic;
 using Microsoft.UI.Xaml.Media;
 
 namespace TaskManager.Helper
 {
+    /// <summary>
+    /// Class IconCache is responsible for caching icons to improve performance and reduce redundant loading of icons from disk.
+    /// </summary>
     public static class IconCache
     {
-        // a file path as the key and the ImageSource as the value
+        // ConcurrentDictionary ist sicher für Multi-Threading
+        private static readonly ConcurrentDictionary<string, ImageSource> _iconCache = new();
 
-        private static readonly Dictionary<string, ImageSource> _iconCache = new();
-
-        public static bool TryGetIcon(string path, out ImageSource? icon)
+        /// <summary>
+        /// Method to try to get an icon from the cache based on the provided path. 
+        /// It returns true if the icon is found in the cache, otherwise false.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="icon"></param>
+        /// <returns></returns>
+        public static bool TryGetIcon(string path, out ImageSource icon)
         {
             return _iconCache.TryGetValue(path, out icon);
         }
 
+        /// <summary>
+        /// Method to add an icon.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="icon"></param>
         public static void AddIcon(string path, ImageSource icon)
         {
-            if (!_iconCache.ContainsKey(path))
-            {
-                _iconCache.Add(path, icon);
-            }
+            // TryAdd fügt nur hinzu, wenn der Key noch nicht existiert
+            _iconCache.TryAdd(path, icon);
         }
     }
 }
