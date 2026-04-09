@@ -39,6 +39,10 @@ namespace TaskManager
             //  set DataContext for Bindings
             if (this.Content is FrameworkElement root) root.DataContext = ViewModel;
 
+            // Initialize the ViewModel with the DispatcherQueue to allow it to update the UI from background threads.
+            // This is necessary for the ViewModel to perform asynchronous operations and update the UI without blocking the main thread.
+            ViewModel.Initialize(this.DispatcherQueue);
+
             _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             _refreshTimer.Tick += async (s, e) => {
                 await ViewModel.RefreshDataAsync();
