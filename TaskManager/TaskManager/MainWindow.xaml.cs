@@ -45,8 +45,19 @@ namespace TaskManager
 
             _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             _refreshTimer.Tick += async (s, e) => {
+                // find intern scollviewer to save the scroll position before refreshing data
+                var scrollViewer = FindChild<ScrollViewer>(ProcessListView, null);
+                double offset = scrollViewer?.VerticalOffset ?? 0;
+
                 await ViewModel.RefreshDataAsync();
                 UpdateUIEffects();
+
+                if (scrollViewer != null)
+                {
+                    _ = DispatcherQueue.TryEnqueue(() => {
+                        scrollViewer.ChangeView(null, offset, null, true);
+                    });
+                }
             };
 
             ViewModel.PropertyChanged += (s, e) => {
