@@ -258,6 +258,12 @@ namespace TaskManager
             }
         }
 
+        /// <summary>
+        /// Method to watch over if the serachbox text changes and update the filter text in the viewmodel accordingly. 
+        /// This allows the process list to be filtered based on the user's input in real-time.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             ViewModel.FilterText = (sender as TextBox)?.Text ?? string.Empty;

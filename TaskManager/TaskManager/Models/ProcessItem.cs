@@ -22,13 +22,21 @@ namespace TaskManager
         public string? ImagePath { get; set; }
         public string CpuUsageDisplay => $"{CpuUsage:F1}%";
 
+        // private fields for properties that require change notification
+        private double _cpuUsage;
+        private bool _isFlyoutOpen;
+        private ImageSource? _iconSource;
+
         public event PropertyChangedEventHandler? PropertyChanged;
+
+        /// <summary>
+        /// Method to trigger the PropertyChanged event, which notifies the UI that a property value has changed and the display should be updated accordingly.
+        /// </summary>
+        /// <param name="name">The name of the property that changed.</param>
         protected void OnPropertyChanged([CallerMemberName] string? name = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
-
-        private double _cpuUsage;
 
         /// <summary>
         /// method triggers the change of the CPU usage and notifies the UI to update the display.
@@ -46,14 +54,19 @@ namespace TaskManager
             }
         }
 
-        private ImageSource? _iconSource;
+        /// <summary>
+        /// Method to get or set the icon source for the process. 
+        /// It uses the ImageSource type, which is compatible with WinUI, to represent the icon associated with the process.
+        /// </summary>
         public ImageSource? IconSource
         {
             get => _iconSource;
             set { _iconSource = value; OnPropertyChanged(); }
         }
 
-        private bool _isFlyoutOpen;
+        /// <summary>
+        /// Gets or sets a value indicating whether the flyout is currently open.
+        /// </summary>
         public bool IsFlyoutOpen
         {
             get => _isFlyoutOpen;
