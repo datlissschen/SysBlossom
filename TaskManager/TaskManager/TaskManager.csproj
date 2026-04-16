@@ -16,7 +16,7 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 	<ItemGroup>
-	  <Content Remove="Assets\iconTaskmanager.ico" />
+	  <None Remove="Assets\iconTaskmanager.ico" />
 	</ItemGroup>
 
   <ItemGroup>
@@ -48,6 +48,9 @@
 	  <PackageReference Include="System.Drawing.Common" Version="9.0.2" />
   </ItemGroup>
   <ItemGroup>
+    <Content Update="Assets\iconTaskmanager.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Update="Assets\Lottie\LoadingFlower.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
