@@ -1,3 +1,5 @@
+using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -19,6 +21,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using WinRT.Interop;
 
 namespace TaskManager
 {
@@ -41,6 +44,8 @@ namespace TaskManager
         public MainWindow()
         {
             this.InitializeComponent();
+
+            SetWindowIcon("Assets/AppIcon.ico");
 
             _refreshTimer = new DispatcherTimer();
             _refreshTimer.Interval = TimeSpan.FromSeconds(2);
@@ -440,6 +445,22 @@ namespace TaskManager
             {
                 item.IsFlyoutOpen = false;
             }
+        }
+
+        /// <summary>
+        /// Method to set the window icon using the AppWindow API. 
+        /// It retrieves the window handle, gets the AppWindow instance, and sets the icon from the specified path.
+        /// </summary>
+        /// <param name="iconPath"></param>
+        private void SetWindowIcon(string iconPath)
+        {
+            // Hol dir das Fenster-Handle (HWND)
+            IntPtr hWnd = WindowNative.GetWindowHandle(this);
+            WindowId windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
+            AppWindow appWindow = AppWindow.GetFromWindowId(windowId);
+
+            // Icon zuweisen
+            appWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, iconPath));
         }
     }
 }
