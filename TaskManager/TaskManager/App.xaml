@@ -20,6 +20,16 @@
             <SolidColorBrush x:Key="SecondaryKawaiiBrush" Color="{StaticResource KawaiiBlue}"/>
 
             <CornerRadius x:Key="ControlCornerRadius">12</CornerRadius>
+
+            <Style TargetType="ToolTip">
+                <Setter Property="Background" Value="White" />
+                <Setter Property="BorderBrush" Value="{StaticResource PrimaryKawaiiBrush}" />
+                <Setter Property="BorderThickness" Value="2" />
+                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="Padding" Value="10,5" />
+                <Setter Property="Foreground" Value="#4A4A4A" />
+                <Setter Property="FontSize" Value="12" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

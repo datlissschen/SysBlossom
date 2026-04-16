@@ -22,25 +22,19 @@ using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinRT.Interop;
+using TaskManager.Models;
+using TaskManager.Services;
+using TaskManager.Helper;
 
 namespace TaskManager
 {
     public sealed partial class MainWindow : Window
     {
-        private string _sortColumn = "CPU"; // Default sort
-        private bool _isAscending = false;   // Default to highest CPU first
+        public MainViewModel ViewModel { get; } = new();
         private DispatcherTimer _refreshTimer;
-        private readonly ProcessService _service = new();
-        public ObservableCollection<ProcessItem> Processes { get; } = new();
-        private string _filterText = string.Empty;
-        // queue for icons
-        private readonly ConcurrentQueue<ProcessItem> _iconQueue = new();
-
-
         private readonly List<double> _cpuHistory = new();
         private readonly List<double> _ramHistory = new();
-        private const int MaxPoints = 50; // amount of points to show in the graph
-
+        private const int MaxPoints = 50;
         public MainWindow()
         {
             this.InitializeComponent();
@@ -50,206 +44,110 @@ namespace TaskManager
             _refreshTimer = new DispatcherTimer();
             _refreshTimer.Interval = TimeSpan.FromSeconds(2);
             _refreshTimer.Tick += async (s, e) => await RefreshDataAsync();
+            //  set DataContext for Bindings
+            if (this.Content is FrameworkElement root) root.DataContext = ViewModel;
 
-            // START ONE THROTTLED ICON WORKER
-            _ = StartIconWorker();
+            // Initialize the ViewModel with the DispatcherQueue to allow it to update the UI from background threads.
+            // This is necessary for the ViewModel to perform asynchronous operations and update the UI without blocking the main thread.
+            ViewModel.Initialize(this.DispatcherQueue);
+
+            _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _refreshTimer.Tick += async (s, e) => {
+                // find intern scollviewer to save the scroll position before refreshing data
+                var scrollViewer = FindChild<ScrollViewer>(ProcessListView, null);
+                double offset = scrollViewer?.VerticalOffset ?? 0;
+
+                await ViewModel.RefreshDataAsync();
+                UpdateUIEffects();
+
+                if (scrollViewer != null)
+                {
+                    _ = DispatcherQueue.TryEnqueue(() => {
+                        scrollViewer.ChangeView(null, offset, null, true);
+                    });
+                }
+            };
+
+            ViewModel.PropertyChanged += (s, e) => {
+                if (e.PropertyName == nameof(MainViewModel.TotalCpu)) UpdateMascot();
+            };
 
             _refreshTimer.Start();
-            _ = RefreshDataAsync();
+            _ = ViewModel.RefreshDataAsync();
         }
 
         /// <summary>
-        /// Worker method for the icons.
+        /// Updates the visual effects and data displayed in the CPU and RAM usage graphs.
         /// </summary>
-        /// <returns></returns>
-        private async Task StartIconWorker()
+        /// <remarks>Call this method to refresh the UI elements that represent CPU and RAM usage. This
+        /// ensures that the displayed information reflects the latest performance data.</remarks>
+        private void UpdateUIEffects()
         {
-            while (true)
-            {
-                if (_iconQueue.TryDequeue(out var item))
-                {
-                    // load only if no Icon in Cache
-                    if (item.IconSource == null && !string.IsNullOrEmpty(item.ImagePath))
-                    {
-                        await Task.Run(() => 
-                        {
-                            try
-                            {
-                                if (File.Exists(item.ImagePath))
-                                {
-                                    using var icon = System.Drawing.Icon.ExtractAssociatedIcon(item.ImagePath);
-                                    if (icon != null)
-                                    {
-                                        var softwareBitmap = IconHelper.GetSoftwareBitmapFromIcon(icon);
+            UpdateGraph(CpuGraphLine, _cpuHistory, ViewModel.TotalCpu, 100, CpuSparkle);
+            UpdateGraph(RamGraphLine, _ramHistory, ViewModel.TotalRam, 32000, RamSparkle);
+        }
 
-                                        // assign UI thread
-                                        DispatcherQueue.TryEnqueue(async () =>
-                                        {
-                                            var bitmapSource = new SoftwareBitmapSource();
-                                            await bitmapSource.SetBitmapAsync(softwareBitmap);
-                                            item.IconSource = bitmapSource;
-                                        });
-                                    }
-                                }
-                            }
-                            catch { /* ignore catc */ }
-                        });
-                    }
-                    await Task.Delay(30); 
-                }
+        /// <summary>
+        /// Updates the mascot's playback rate based on the current CPU usage.
+        /// </summary>
+        /// <remarks>Sets the mascot's playback rate to 2.0 if the total CPU usage exceeds 70 percent;
+        /// otherwise, sets it to 1.0. This method has no effect if the mascot player is not initialized.</remarks>
+        private void UpdateMascot()
+        {
+            if (MascotPlayer != null)
+                MascotPlayer.PlaybackRate = ViewModel.TotalCpu > 70 ? 2.0 : 1.0;
+        }
+
+
+        /// <summary>
+        /// Click handler for the columns.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void Header_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string column)
+            {
+                if (ViewModel.SortColumn == column)
+                    ViewModel.IsAscending = !ViewModel.IsAscending;
                 else
                 {
-                    await Task.Delay(500); 
+                    ViewModel.SortColumn = column;
+                    ViewModel.IsAscending = false;
                 }
+                await ViewModel.RefreshDataAsync();
             }
         }
 
         /// <summary>
-        /// Logic for the refresh button. It shows a loading animation while refreshing the data asynchronously. 
-        /// The actual data refresh is done in the RefreshDataAsync method, which is called when the button is clicked and also periodically by the timer. 
-        /// The loading animation is displayed until the data refresh is complete, providing visual feedback to the user that the refresh operation is in progress.
+        /// Handles the Click event of the Refresh button by asynchronously refreshing the data in the associated view
+        /// model.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <param name="sender">The source of the event, typically the Refresh button.</param>
+        /// <param name="e">The event data associated with the Click event.</param>
         private async void RefreshButton_Click(object sender, RoutedEventArgs e)
-        {
-            RefreshLoadingPlayer.Visibility = Visibility.Visible;
-            _ = RefreshLoadingPlayer.PlayAsync(0, 1, true);
-
-            await RefreshDataAsync();
-
-            RefreshLoadingPlayer.Stop();
-            RefreshLoadingPlayer.Visibility = Visibility.Collapsed;
-        }
+            => await ViewModel.RefreshDataAsync();
 
         /// <summary>
-        /// Method to check whether the text in the search box has changed and to trigger the refresh of the data accordingly.
+        /// Method for the create the context menu for the process list. 
+        /// It creates a menu with a "Kill Process" option that allows the user to terminate the selected processes.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private async void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        /// <param name="sender">The source of the event, typically the Kill button.</param>
+        /// <param name="e">The event data associated with the Click event.</param>
+        private void KillButton_Click(object sender, RoutedEventArgs e)
         {
-            _filterText = (sender as TextBox)?.Text ?? string.Empty;
-            await RefreshDataAsync();
+            var selected = ProcessListView.SelectedItems.Cast<ProcessItem>().ToList();
+            if (!selected.Any()) return;
+
+            var service = new ProcessService();
+            foreach (var item in selected)
+            {
+                var pids = item.SubProcesses.Select(s => s.Pid).ToList();
+                service.KillProcesses(pids);
+            }
+            _ = ViewModel.RefreshDataAsync();
         }
 
-        /// <summary>
-        /// Asynchronously refreshes the list of processes based on the current filter criteria.
-        /// </summary>
-        /// <remarks>This method retrieves process data in a background thread, filters it according to
-        /// the specified filter text, and updates the UI list of processes with minimal disruption. Existing items are
-        /// updated to preserve UI state, such as scroll position. Icons for the filtered processes are loaded in the
-        /// background to avoid blocking the UI.</remarks>
-        /// <returns>A task that represents the asynchronous refresh operation.</returns>
-        private async Task RefreshDataAsync()
-        {
-            var allData = await Task.Run(() => _service.GetProcesses());
-
-            // Filter
-            var filteredData = allData.Where(p =>
-                string.IsNullOrEmpty(_filterText) ||
-                p.Name.Contains(_filterText, StringComparison.OrdinalIgnoreCase));
-
-            // APPLY DYNAMIC SORTING
-            IEnumerable<ProcessItem> sortedQuery;
-            switch (_sortColumn)
-            {
-                case "Name":
-                    sortedQuery = _isAscending ? filteredData.OrderBy(p => p.Name) : filteredData.OrderByDescending(p => p.Name);
-                    break;
-                case "Memory":
-                    sortedQuery = _isAscending ? filteredData.OrderBy(p => ParseMemory(p.MemoryUsage)) : filteredData.OrderByDescending(p => ParseMemory(p.MemoryUsage));
-                    break;
-                case "Status":
-                    sortedQuery = _isAscending ? filteredData.OrderBy(p => p.Status) : filteredData.OrderByDescending(p => p.Status);
-                    break;
-                default: // CPU
-                    sortedQuery = _isAscending ? filteredData.OrderBy(p => p.CpuUsage) : filteredData.OrderByDescending(p => p.CpuUsage);
-                    break;
-            }
-            var sortedList = sortedQuery.ToList();
-
-            // SAVE SELECTION
-            var selectedNames = ProcessListView.SelectedItems
-                .Cast<ProcessItem>()
-                .Select(p => p.Name)
-                .ToList();
-
-            // YNC LOGIC (In-place update)
-            var currentItems = Processes.ToDictionary(p => p.Name);
-            var newIds = sortedList.Select(p => p.Name).ToHashSet();
-
-            // Remove old
-            for (int i = Processes.Count - 1; i >= 0; i--)
-            {
-                if (!newIds.Contains(Processes[i].Name)) Processes.RemoveAt(i);
-            }
-            bool isUserBusy = Processes.Any(p => p.IsFlyoutOpen);
-
-            // Update/Move/Add
-            for (int i = 0; i < sortedList.Count; i++)
-            {
-                var newItem = sortedList[i];
-                if (currentItems.TryGetValue(newItem.Name, out var existingItem))
-                {
-                    // Update values and ids but keep reference to preserve UI state
-                    existingItem.CpuUsage = newItem.CpuUsage;
-                    existingItem.MemoryUsage = newItem.MemoryUsage;
-                    existingItem.Status = newItem.Status;
-                    existingItem.SubProcesses = newItem.SubProcesses;
-
-                    if (!isUserBusy)
-                    {
-                        int oldIndex = Processes.IndexOf(existingItem);
-                        if (oldIndex != i) Processes.Move(oldIndex, i);
-                    }
-                }
-                else
-                {
-                    Processes.Insert(i, newItem);
-                    if (!string.IsNullOrEmpty(newItem.ImagePath) && !IconCache.TryGetIcon(newItem.ImagePath, out _))
-                    {
-                        _iconQueue.Enqueue(newItem);
-                    }
-                }
-            }
-
-            // clear and re-add only if the selection actually changed or items moved
-            ProcessListView.SelectedItems.Clear();
-            foreach (var name in selectedNames)
-            {
-                var itemToReselect = Processes.FirstOrDefault(p => p.Name == name);
-                if (itemToReselect != null) ProcessListView.SelectedItems.Add(itemToReselect);
-            }
-            // get data
-            double totalCpu = sortedList.Sum(p => p.CpuUsage);
-            double totalRam = sortedList.Sum(p => ParseMemory(p.MemoryUsage));
-
-            if (totalCpu > 70)
-            {
-                // Make the mascot look "panicked" or energetic
-                MascotPlayer.PlaybackRate = 2.0;
-                if (MascotSource.UriSource.ToString().Contains("Happy"))
-                {
-                    MascotSource.UriSource = new Uri("ms-appx:///Assets/Lottie/Mascot_Stress.json");
-                    _ = MascotPlayer.PlayAsync(0, 1, true);
-                }
-            }
-            else
-            {
-                MascotPlayer.PlaybackRate = 1.0;
-                if (MascotSource.UriSource.ToString().Contains("Stress"))
-                {
-                    MascotSource.UriSource = new Uri("ms-appx:///Assets/Lottie/Mascot_Happy.json");
-                    _ = MascotPlayer.PlayAsync(0, 1, true);
-                }
-            }
-
-            // update graph on UI Thread
-            UpdateGraph(CpuGraphLine, _cpuHistory, totalCpu, 100, CpuSparkle);
-            UpdateGraph(RamGraphLine, _ramHistory, totalRam, 32000, RamSparkle);
-
-        }
 
         /// <summary>
         /// helper for drawing the graph. It takes the new value, adds it to the history, and updates the Polyline points accordingly.
@@ -302,74 +200,6 @@ namespace TaskManager
         }
 
         /// <summary>
-        /// Helper to turn "150 MB" into 150 for sorting
-        /// </summary>
-        /// <param name="memString"></param>
-        /// <returns></returns>
-        private long ParseMemory(string memString)
-        {
-            if (long.TryParse(System.Text.RegularExpressions.Regex.Match(memString, @"\d+").Value, out long result))
-                return result;
-            return 0;
-        }
-
-        /// <summary>
-        /// Handles the click event for the Kill button, terminating the selected process from the list.
-        /// </summary>
-        /// <remarks>If a process is selected in the ProcessListView, it attempts to kill the process
-        /// using its ID. The method refreshes the data asynchronously after the process is killed.</remarks>
-        /// <param name="sender">The source of the event, typically the Kill button that was clicked.</param>
-        /// <param name="e">The event data associated with the click event, providing additional information about the event.</param>
-        private void KillButton_Click(object sender, RoutedEventArgs e)
-        {
-            // Get all selected items
-            var selectedProcesses = ProcessListView.SelectedItems.Cast<ProcessItem>().ToList();
-
-            if (selectedProcesses.Count == 0) return;
-
-            // loop and kill
-            bool atLeastOneKilled = false;
-
-            foreach (var process in selectedProcesses)
-            {
-                // get all pids for the process group
-                var pidsToKill = process.SubProcesses.Select(s => s.Pid).ToList();
-
-                if (_service.KillProcesses(pidsToKill)) atLeastOneKilled = true;
-            }
-
-            // Refresh the list if we actually closed something
-            if (atLeastOneKilled)
-            {
-                _ = RefreshDataAsync();
-            }
-        }
-
-        /// <summary>
-        /// Click handler for the columns.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private async void Header_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.Tag is string column)
-            {
-                // If clicking the same column, flip the direction. Otherwise, set to Descending.
-                if (_sortColumn == column)
-                {
-                    _isAscending = !_isAscending;
-                }
-                else
-                {
-                    _sortColumn = column;
-                    _isAscending = false;
-                }
-
-                await RefreshDataAsync();
-            }
-        }
-
-        /// <summary>
         /// Handles the SelectionChanged event for the process list view and plays an animation for each newly selected
         /// item.
         /// </summary>
@@ -381,7 +211,7 @@ namespace TaskManager
         {
             foreach (var item in e.AddedItems)
             {
-                //get visual for data object
+                // get visual for data object
                 var container = ProcessListView.ContainerFromItem(item) as ListViewItem;
                 if (container == null) continue;
 
@@ -461,6 +291,16 @@ namespace TaskManager
 
             // Icon zuweisen
             appWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, iconPath));
+        }
+        
+        /// Method to watch over if the serachbox text changes and update the filter text in the viewmodel accordingly. 
+        /// This allows the process list to be filtered based on the user's input in real-time.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            ViewModel.FilterText = (sender as TextBox)?.Text ?? string.Empty;
         }
     }
 }

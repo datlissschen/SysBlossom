@@ -7,6 +7,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:lottie="using:CommunityToolkit.WinUI.Lottie"
+    xmlns:models="using:TaskManager.Models"
     mc:Ignorable="d"
     Title="TaskManager">
 
@@ -57,6 +58,9 @@
                     <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#444444"/>
                     <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#444444"/>
                 </TextBox.Resources>
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="Type here to filter your processes by name! 🔍" />
+                </ToolTipService.ToolTip>
             </TextBox>
 
             <Button x:Name="RefreshButton" Click="RefreshButton_Click" 
@@ -99,6 +103,9 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
+                    <ToolTipService.ToolTip>
+                        <ToolTip Content="This graph depicts the total CPU  and RAM useage,since you opened this Taskmanager." />
+                    </ToolTipService.ToolTip>
 
                     <StackPanel Grid.Row="0" Margin="5" Width ="230" VerticalAlignment="Center">
                         <TextBlock Text="☁️ Total CPU" FontSize="12" Foreground="#779ECB" FontWeight="Bold"/>
@@ -121,7 +128,17 @@
 
 
         <Border Grid.Row="1" Background="White" CornerRadius="25" Padding="25" BorderBrush="{StaticResource SecondaryKawaiiBrush}" BorderThickness="2">
-            <ListView x:Name="ProcessListView" ItemsSource="{x:Bind Processes, Mode=OneWay}" SelectionMode="Extended" Background="Transparent" SelectionChanged="ProcessListView_SelectionChanged">
+            <ListView x:Name="ProcessListView" 
+                      ItemsSource="{x:Bind ViewModel.Processes, Mode=OneWay}" 
+                      Header="{x:Bind ViewModel, Mode=OneWay}"
+                      SelectionMode="Extended" 
+                      Background="Transparent" 
+                      SelectionChanged="ProcessListView_SelectionChanged">
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <ItemsStackPanel ItemsUpdatingScrollMode="KeepItemsInView" />
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
                 <ListView.Resources>
                     <SolidColorBrush x:Key="ListViewItemForeground" Color="#4A4A4A"/>
                     <SolidColorBrush x:Key="ListViewItemForegroundPointerOver" Color="#FF69B4"/>
@@ -154,7 +171,7 @@
                 </ListView.ItemContainerStyle>
 
                 <ListView.HeaderTemplate>
-                    <DataTemplate>
+                    <DataTemplate x:DataType="local:MainViewModel">
                         <Grid Margin="12,0,0,5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="250"/>
@@ -164,15 +181,42 @@
                                 <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="90"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="🌸 Process" FontWeight="Bold" Grid.Column="0"/>
-                            <TextBlock Text="#" FontWeight="Bold" Grid.Column="1"/>
-                            <TextBlock Text="⚡ CPU" FontWeight="Bold" Grid.Column="2"/>
-                            <TextBlock Text="🧠 Memory" FontWeight="Bold" Grid.Column="3"/>
-                            <TextBlock Text="✨ Status" FontWeight="Bold" Grid.Column="4"/>
+
+                            <TextBlock Text="🌸 Process" FontSize="12" Foreground="#779ECB" FontWeight="Bold" Grid.Column="0">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="This is the process name." />
+                </ToolTipService.ToolTip>
+                            </TextBlock>
+
+                            <TextBlock Text="#" FontWeight="Bold" Grid.Column="1" />
+
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="⚡ CPU" FontSize="12" Foreground="#779ECB" FontWeight="Bold" />
+                                <TextBlock Text="{x:Bind TotalCpuDisplay, Mode=OneWay}" 
+                           FontSize="12" Foreground="#779ECB" FontWeight="Normal"/>
+                                <ToolTipService.ToolTip>
+                                    <ToolTip Content="This is the total CPU Usage." />
+                                </ToolTipService.ToolTip>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="3">
+                                <TextBlock Text="🧠 RAM" FontSize="12" Foreground="#779ECB" FontWeight="Bold" />
+                                <TextBlock Text="{x:Bind TotalRamDisplay, Mode=OneWay}" 
+                           FontSize="12" Foreground="#FFB7C5" FontWeight="Normal"/>
+                                <ToolTipService.ToolTip>
+                                    <ToolTip Content="This is the total RAM Usage." />
+                                </ToolTipService.ToolTip>
+                            </StackPanel>
+
+                            <TextBlock Text="✨ Status" FontSize="12" Foreground="#779ECB" FontWeight="Bold" Grid.Column="4">  
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="This is the Status of the process." />
+                </ToolTipService.ToolTip>
+                            </TextBlock>
                         </Grid>
                     </DataTemplate>
                 </ListView.HeaderTemplate>
-
+                
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="local:ProcessItem">
                         <Grid Height="45">
@@ -244,7 +288,7 @@
 
                                             <ItemsControl ItemsSource="{Binding SubProcesses}">
                                                 <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="local:SubProcessInfo">
+                                                    <DataTemplate x:DataType="models:SubProcessInfo">
                                                         <Grid Margin="0,2">
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="60"/>
