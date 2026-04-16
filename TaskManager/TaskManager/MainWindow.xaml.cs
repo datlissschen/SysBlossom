@@ -43,7 +43,7 @@ namespace TaskManager
 
             _refreshTimer = new DispatcherTimer();
             _refreshTimer.Interval = TimeSpan.FromSeconds(2);
-            _refreshTimer.Tick += async (s, e) => await RefreshDataAsync();
+            _refreshTimer.Tick += async (s, e) => await ViewModel.RefreshDataAsync();
             //  set DataContext for Bindings
             if (this.Content is FrameworkElement root) root.DataContext = ViewModel;
 
