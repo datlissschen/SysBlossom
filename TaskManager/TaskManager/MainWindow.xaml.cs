@@ -1,3 +1,5 @@
+using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -19,6 +21,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using WinRT.Interop;
 using TaskManager.Models;
 using TaskManager.Services;
 using TaskManager.Helper;
@@ -36,6 +39,11 @@ namespace TaskManager
         {
             this.InitializeComponent();
 
+            SetWindowIcon("Assets/AppIcon.ico");
+
+            _refreshTimer = new DispatcherTimer();
+            _refreshTimer.Interval = TimeSpan.FromSeconds(2);
+            _refreshTimer.Tick += async (s, e) => await RefreshDataAsync();
             //  set DataContext for Bindings
             if (this.Content is FrameworkElement root) root.DataContext = ViewModel;
 
@@ -270,6 +278,21 @@ namespace TaskManager
         }
 
         /// <summary>
+        /// Method to set the window icon using the AppWindow API. 
+        /// It retrieves the window handle, gets the AppWindow instance, and sets the icon from the specified path.
+        /// </summary>
+        /// <param name="iconPath"></param>
+        private void SetWindowIcon(string iconPath)
+        {
+            // Hol dir das Fenster-Handle (HWND)
+            IntPtr hWnd = WindowNative.GetWindowHandle(this);
+            WindowId windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
+            AppWindow appWindow = AppWindow.GetFromWindowId(windowId);
+
+            // Icon zuweisen
+            appWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, iconPath));
+        }
+        
         /// Method to watch over if the serachbox text changes and update the filter text in the viewmodel accordingly. 
         /// This allows the process list to be filtered based on the user's input in real-time.
         /// </summary>
