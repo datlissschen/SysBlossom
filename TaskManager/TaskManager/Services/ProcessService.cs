@@ -1,152 +1,205 @@
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Drawing;
 using System.Linq;
-using System.Runtime.InteropServices;
-using Windows.Graphics.Imaging;
-using TaskManager.Helper;
 using TaskManager.Models;
 
 namespace TaskManager.Services
 {
     public class ProcessService
     {
-        /// <summary>
-        /// Functions to save the last time where something has been calculated.
-        /// </summary>
         private readonly Dictionary<int, (DateTime Time, TimeSpan ProcessorTime)> _history = new();
+        private readonly int _processorCount = Math.Max(1, Environment.ProcessorCount);
+        private readonly int _currentProcessId = Environment.ProcessId;
 
         /// <summary>
-        /// Function to take care of the starting of the counting of the processor.
+        /// Liste kritischer Windows-Systemprozesse, die niemals beendet werden dürfen (Schutz vor BSOD/Systemabsturz).
         /// </summary>
-        private readonly int _processorCount = Environment.ProcessorCount;
+        private static readonly HashSet<string> ProtectedProcesses = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "System", "Idle", "Registry", "smss", "csrss", "wininit",
+            "services", "lsass", "svchost", "winlogon", "dwm", "fontdrvhost", "Memory Compression"
+        };
 
         /// <summary>
-        /// Method to get the tasks and their details. 
-        /// It retrieves all running processes, formats their memory usage, and checks if they are responding.
+        /// Leichtgewichtiges Struct als Ersatz für 'dynamic', um Boxing und DLR-Overhead zu vermeiden.
         /// </summary>
-        /// <returns></returns>
+        private readonly record struct RawProcessData(
+            int Id,
+            string Name,
+            double Cpu,
+            long MemoryBytes,
+            bool IsResponding,
+            string? Path);
+
+        /// <summary>
+        /// Liest alle laufenden Prozesse aus, berechnet die CPU-Auslastung und gibt alle OS-Handles sauber frei.
+        /// </summary>
         public List<ProcessItem> GetProcesses()
         {
-            var processList = new List<ProcessItem>();
-            var rawList = new List<dynamic>();
-            var allProcesses = Process.GetProcesses();
-            var currentTime = DateTime.UtcNow;
+            var rawList = new List<RawProcessData>();
+            var activeIds = new HashSet<int>();
+            Process[] allProcesses = Process.GetProcesses();
+            DateTime currentTime = DateTime.UtcNow;
 
-            foreach (var p in allProcesses)
+            foreach (Process p in allProcesses)
             {
                 try
                 {
-                    var currentProcessorTime = p.TotalProcessorTime;
-                    double cpuPercent = 0;
+                    int pid = p.Id;
+                    activeIds.Add(pid);
 
-                    if (_history.TryGetValue(p.Id, out var lastValues))
+                    string processName = p.ProcessName;
+                    long workingSet = p.WorkingSet64;
+                    bool isResponding = true;
+
+                    try
                     {
-                        // count difference
-                        var timeDiff = currentTime - lastValues.Time;
-                        var cpuDiff = currentProcessorTime - lastValues.ProcessorTime;
-
-                        // calculate CPU real time 
-                        cpuPercent = (cpuDiff.TotalMilliseconds / timeDiff.TotalMilliseconds) * 100 / _processorCount;
+                        isResponding = p.Responding;
+                    }
+                    catch
+                    {
+                        // Zugriff auf Responding kann bei manchen Systemprozessen fehlschlagen
                     }
 
-                    // save values
-                    _history[p.Id] = (currentTime, currentProcessorTime);
+                    double cpuPercent = 0;
+                    try
+                    {
+                        TimeSpan currentProcessorTime = p.TotalProcessorTime;
+                        if (_history.TryGetValue(pid, out var lastValues))
+                        {
+                            double timeDiffMs = (currentTime - lastValues.Time).TotalMilliseconds;
+                            double cpuDiffMs = (currentProcessorTime - lastValues.ProcessorTime).TotalMilliseconds;
+
+                            if (timeDiffMs > 0 && cpuDiffMs >= 0)
+                            {
+                                cpuPercent = (cpuDiffMs / timeDiffMs) * 100.0 / _processorCount;
+                            }
+                        }
+                        _history[pid] = (currentTime, currentProcessorTime);
+                    }
+                    catch (Win32Exception) { /* Zugriff verweigert (geschützter Prozess) */ }
+                    catch (InvalidOperationException) { /* Prozess wurde bereits beendet */ }
+
                     string? fullPath = null;
                     try
                     {
                         fullPath = p.MainModule?.FileName;
                     }
-                    catch { /* Access Denied for path */ }
-
-                    rawList.Add(new
+                    catch
                     {
-                        Id = p.Id,
-                        Name = p.ProcessName,
-                        Cpu = Math.Clamp(cpuPercent, 0, 1000), 
-                        MemoryRaw = p.WorkingSet64, 
-                        IsResponding = p.Responding,
-                        Path = p.MainModule?.FileName
-                    });
+                        // Zugriff auf MainModule (z. B. 32/64-Bit-Barriere oder Systemprozess) nicht erlaubt
+                    }
+
+                    rawList.Add(new RawProcessData(
+                        Id: pid,
+                        Name: processName,
+                        Cpu: Math.Clamp(cpuPercent, 0.0, 100.0),
+                        MemoryBytes: workingSet,
+                        IsResponding: isResponding,
+                        Path: fullPath
+                    ));
                 }
                 catch
                 {
-                    // Access denied
-                    continue;
+                    // Prozess ist während der Abfrage beendet worden oder vollständig geschützt
+                }
+                finally
+                {
+                    // WICHTIG: Gibt das native Betriebssystem-Handle sofort frei!
+                    p.Dispose();
                 }
             }
-            var activeIds = allProcesses.Select(p => p.Id).ToHashSet();
+
+            // Verwaiste Prozess-IDs aus der Historie bereinigen (verhindert Memory Leak)
             var ghostIds = _history.Keys.Where(id => !activeIds.Contains(id)).ToList();
-            foreach (var id in ghostIds) _history.Remove(id);
-
-            var groupedList = rawList
-            .GroupBy(p => p.Name)
-            .Select(group => new ProcessItem
+            foreach (int id in ghostIds)
             {
-                Name = group.Key,
-                // create a list of subprocesses for each process group
-                SubProcesses = group.Select(x => new SubProcessInfo
-                {
-                    Pid = (int)x.Id,
-                    Cpu = (double)x.Cpu,
-                    Memory = $"{(long)x.MemoryRaw / 1024 / 1024} MB"
-                }).ToList(),
+                _history.Remove(id);
+            }
 
-                CpuUsage = group.Sum(x => (double)x.Cpu),
-                MemoryUsage = $"{(group.Sum(x => (long)x.MemoryRaw) / 1024 / 1024)} MB",
-                Status = group.Any(x => (bool)x.IsResponding) ? "Active" : "Hung",
-                ImagePath = group.FirstOrDefault(x => x.Path != null)?.Path
-            })
-            .OrderByDescending(x => x.CpuUsage)
-            .ToList();
+            // Gruppierung nach Prozessname
+            var groupedList = rawList
+                .GroupBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(group =>
+                {
+                    double totalMemoryMB = group.Sum(x => x.MemoryBytes) / (1024.0 * 1024.0);
+                    return new ProcessItem
+                    {
+                        Name = group.Key,
+                        SubProcesses = group.Select(x => new SubProcessInfo
+                        {
+                            Pid = x.Id,
+                            Cpu = x.Cpu,
+                            MemoryMB = x.MemoryBytes / (1024.0 * 1024.0)
+                        }).ToList(),
+                        CpuUsage = Math.Clamp(group.Sum(x => x.Cpu), 0.0, 100.0),
+                        MemoryMB = totalMemoryMB,
+                        Status = group.All(x => x.IsResponding) ? "Active" : "Hung",
+                        ImagePath = group.FirstOrDefault(x => !string.IsNullOrEmpty(x.Path)).Path
+                    };
+                })
+                .OrderByDescending(x => x.CpuUsage)
+                .ToList();
 
             return groupedList;
         }
 
         /// <summary>
-        /// method to get the icon of a process. It uses the file path of the process to extract the associated icon.
+        /// Prüft, ob eine Prozessgruppe kritische Systemprozesse enthält.
         /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns></returns>
-        private ImageSource? GetIcon(string fileName)
+        public bool IsCriticalProcess(string processName)
         {
-            try
-            {
-                using (Icon icon = Icon.ExtractAssociatedIcon(fileName)!)
-                {
-                    // Convert System.Drawing.Icon to a WinUI compatible ImageSource
-                    return null; 
-                }
-            }
-            catch { return null; }
+            return !string.IsNullOrWhiteSpace(processName) && ProtectedProcesses.Contains(processName);
         }
-
 
         /// <summary>
-        /// Method to kill the task via the given id.
+        /// Beendet die angegebenen Prozess-IDs unter Einhaltung von Sicherheitsstandards.
         /// </summary>
-        /// <param name="id"></param>
-        public bool KillProcesses(List<int> pids)
+        public bool KillProcesses(IEnumerable<int> pids, out string? errorMessage)
         {
-            try
+            errorMessage = null;
+            var errors = new List<string>();
+
+            foreach (int pid in pids.Distinct())
             {
-                foreach (var pid in pids)
+                if (pid <= 4 || pid == _currentProcessId)
                 {
-                    var p = Process.GetProcessById(pid);
+                    errors.Add($"PID {pid} ist geschützt und darf nicht beendet werden.");
+                    continue;
+                }
+
+                try
+                {
+                    using Process p = Process.GetProcessById(pid);
+
+                    if (ProtectedProcesses.Contains(p.ProcessName))
+                    {
+                        errors.Add($"Systemprozess '{p.ProcessName}' (PID {pid}) darf aus Sicherheitsgründen nicht beendet werden.");
+                        continue;
+                    }
+
                     p.Kill();
                 }
-                return true;
+                catch (ArgumentException)
+                {
+                    // Prozess existiert bereits nicht mehr -> kein Fehler
+                }
+                catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+                {
+                    Debug.WriteLine($"Fehler beim Beenden von PID {pid}: {ex.Message}");
+                    errors.Add($"PID {pid}: {ex.Message}");
+                }
             }
-            catch (Exception ex)
+
+            if (errors.Count > 0)
             {
-                Debug.WriteLine($"Failed to kill process: {ex.Message}");
+                errorMessage = string.Join(Environment.NewLine, errors);
                 return false;
             }
+
+            return true;
         }
-
-
     }
 }
