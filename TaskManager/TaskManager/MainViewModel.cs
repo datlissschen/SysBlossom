@@ -1,4 +1,5 @@
 ﻿using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.Collections.Concurrent;
@@ -22,6 +23,7 @@ namespace TaskManager
     {
         private readonly ProcessService _service = service ?? throw new ArgumentNullException(nameof(service));
         private readonly ConcurrentQueue<ProcessItem> _iconQueue = new();
+        private readonly ConcurrentDictionary<string, ImageSource> _localIconCache = new(StringComparer.OrdinalIgnoreCase);
         private readonly SemaphoreSlim _refreshLock = new(1, 1);
         private CancellationTokenSource? _cts;
         private DispatcherQueue? _dispatcher;
@@ -158,12 +160,18 @@ namespace TaskManager
                     }
                     else
                     {
-                        Processes.Insert(i, newItem);
-
-                        if (!string.IsNullOrEmpty(newItem.ImagePath))
+                        // If icon is already cached, assign it immediately before inserting!
+                        if (!string.IsNullOrEmpty(newItem.ImagePath) &&
+                            _localIconCache.TryGetValue(newItem.ImagePath, out var cached))
+                        {
+                            newItem.IconSource = cached;
+                        }
+                        else if (!string.IsNullOrEmpty(newItem.ImagePath))
                         {
                             _iconQueue.Enqueue(newItem);
                         }
+
+                        Processes.Insert(i, newItem);
                     }
                 }
 
@@ -182,7 +190,7 @@ namespace TaskManager
             if (itemsList.Count == 0) return (true, null);
 
             var pids = itemsList
-                .Where(item => !_service.IsCriticalProcess(item.Name))
+                .Where(item => !ProcessService.IsCriticalProcess(item.Name))
                 .SelectMany(item => item.SubProcesses.Select(s => s.Pid))
                 .ToList();
 
@@ -205,68 +213,73 @@ namespace TaskManager
                     if (_iconQueue.TryDequeue(out var item))
                     {
                         string? path = item.ImagePath;
-                        if (string.IsNullOrEmpty(path))
+                        if (string.IsNullOrEmpty(path) || item.IconSource != null)
                         {
                             continue;
                         }
 
-                        if (IconCache.TryGetIcon(path, out var cachedIcon))
+                        if (_localIconCache.TryGetValue(path, out var fastCached))
                         {
-                            _dispatcher?.TryEnqueue(() => item.IconSource = cachedIcon);
+                            _dispatcher?.TryEnqueue(() => item.IconSource = fastCached);
+                            continue;
                         }
-                        else if (item.IconSource == null)
+
+                        if (IconCache.TryGetIcon(path, out var cachedIcon) && cachedIcon != null)
                         {
-                            var softwareBitmap = await Task.Run(() =>
+                            _localIconCache[path] = cachedIcon;
+                            _dispatcher?.TryEnqueue(() => item.IconSource = cachedIcon);
+                            continue;
+                        }
+
+                        var softwareBitmap = await Task.Run(() =>
+                        {
+                            try
+                            {
+                                if (File.Exists(path))
+                                {
+                                    using Icon? icon = Icon.ExtractAssociatedIcon(path);
+                                    if (icon != null)
+                                    {
+                                        return IconHelper.GetSoftwareBitmapFromIcon(icon);
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine($"Icon extraction failed ({path}): {ex.Message}");
+                            }
+                            return null;
+                        }, token);
+
+                        if (softwareBitmap != null && _dispatcher != null && !token.IsCancellationRequested)
+                        {
+                            _dispatcher.TryEnqueue(async () =>
                             {
                                 try
                                 {
-                                    if (File.Exists(path))
-                                    {
-                                        using Icon? icon = Icon.ExtractAssociatedIcon(path);
-                                        if (icon != null)
-                                        {
-                                            return IconHelper.GetSoftwareBitmapFromIcon(icon);
-                                        }
-                                    }
+                                    var bitmapSource = new SoftwareBitmapSource();
+                                    await bitmapSource.SetBitmapAsync(softwareBitmap);
+                                    _localIconCache[path] = bitmapSource;
+                                    item.IconSource = bitmapSource;
                                 }
                                 catch (Exception ex)
                                 {
-                                    Debug.WriteLine($"Icon extraction failed ({path}): {ex.Message}");
+                                    Debug.WriteLine($"Failed to set SoftwareBitmapSource: {ex.Message}");
                                 }
-                                return null;
-                            }, token);
-
-                            if (softwareBitmap != null && _dispatcher != null && !token.IsCancellationRequested)
-                            {
-                                _dispatcher.TryEnqueue(async () =>
+                                finally
                                 {
-                                    try
-                                    {
-                                        var bitmapSource = new SoftwareBitmapSource();
-                                        await bitmapSource.SetBitmapAsync(softwareBitmap);
-                                        item.IconSource = bitmapSource;
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Debug.WriteLine($"Failed to set SoftwareBitmapSource: {ex.Message}");
-                                    }
-                                    finally
-                                    {
-                                        softwareBitmap.Dispose();
-                                    }
-                                });
-                            }
-                            else
-                            {
-                                softwareBitmap?.Dispose();
-                            }
+                                    softwareBitmap.Dispose();
+                                }
+                            });
                         }
-
-                        await Task.Delay(25, token);
+                        else
+                        {
+                            softwareBitmap?.Dispose();
+                        }
                     }
                     else
                     {
-                        await Task.Delay(300, token);
+                        await Task.Delay(150, token);
                     }
                 }
                 catch (OperationCanceledException)
