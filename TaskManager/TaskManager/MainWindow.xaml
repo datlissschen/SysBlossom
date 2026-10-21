@@ -174,15 +174,15 @@
                     <DataTemplate x:DataType="local:MainViewModel">
                         <Grid Margin="12,0,0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="250"/>
+                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="125"/>
+                                <ColumnDefinition Width="125"/>
+                                <ColumnDefinition Width="125"/>
+                                <ColumnDefinition Width="125"/>
                                 <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="90"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBlock Text="🌸 Process" FontSize="12" Foreground="#779ECB" FontWeight="Bold" Grid.Column="0">
+                            <TextBlock Text="🌸 Process" FontSize="13" Foreground="#779ECB" FontWeight="Normal" Grid.Column="0">
                 <ToolTipService.ToolTip>
                     <ToolTip Content="This is the process name." />
                 </ToolTipService.ToolTip>
@@ -191,24 +191,24 @@
                             <TextBlock Text="#" FontWeight="Bold" Grid.Column="1" />
 
                             <StackPanel Grid.Column="2">
-                                <TextBlock Text="⚡ CPU" FontSize="12" Foreground="#779ECB" FontWeight="Bold" />
+                                <TextBlock Text="⚡ CPU" FontSize="13" Foreground="#779ECB" FontWeight="Normal" />
                                 <TextBlock Text="{x:Bind TotalCpuDisplay, Mode=OneWay}" 
-                           FontSize="12" Foreground="#779ECB" FontWeight="Normal"/>
+                           FontSize="12" Foreground="#779ECB" FontWeight="Bold"/>
                                 <ToolTipService.ToolTip>
                                     <ToolTip Content="This is the total CPU Usage." />
                                 </ToolTipService.ToolTip>
                             </StackPanel>
 
                             <StackPanel Grid.Column="3">
-                                <TextBlock Text="🧠 RAM" FontSize="12" Foreground="#779ECB" FontWeight="Bold" />
+                                <TextBlock Text="🧠 RAM" FontSize="13" Foreground="#779ECB" FontWeight="Normal" />
                                 <TextBlock Text="{x:Bind TotalRamDisplay, Mode=OneWay}" 
-                           FontSize="12" Foreground="#FFB7C5" FontWeight="Normal"/>
+                           FontSize="12" Foreground="#FFB7C5" FontWeight="Bold"/>
                                 <ToolTipService.ToolTip>
                                     <ToolTip Content="This is the total RAM Usage." />
                                 </ToolTipService.ToolTip>
                             </StackPanel>
 
-                            <TextBlock Text="✨ Status" FontSize="12" Foreground="#779ECB" FontWeight="Bold" Grid.Column="4">  
+                            <TextBlock Text="✨ Status" FontSize="13" Foreground="#779ECB" FontWeight="Normal" Grid.Column="4">  
                 <ToolTipService.ToolTip>
                     <ToolTip Content="This is the Status of the process." />
                 </ToolTipService.ToolTip>
@@ -221,12 +221,12 @@
                     <DataTemplate x:DataType="models:ProcessItem">
                         <Grid Height="45">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="250"/>
+                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="125"/>
+                                <ColumnDefinition Width="125"/>
+                                <ColumnDefinition Width="125"/>
+                                <ColumnDefinition Width="125"/>
                                 <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="90"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Orientation="Horizontal" Grid.Column="0" Spacing="12">
                                 <Image Source="{x:Bind IconSource, Mode=OneWay}" Width="28" Height="28" VerticalAlignment="Center"/>
