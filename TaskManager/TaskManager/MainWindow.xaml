@@ -177,7 +177,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- 4, 5, 6: Interactive & Tab-Focusable Column Sort Headers -->
-                <Grid Grid.Row="0" Margin="12,0,0,8" TabNavigation="Local">
+                <Grid Grid.Row="0" Margin="12,0,0,8" TabFocusNavigation="Local">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="200"/>
                         <ColumnDefinition Width="125"/>
@@ -206,7 +206,7 @@
                         </ToolTipService.ToolTip>
                     </Button>
 
-                    <TextBlock Text="#" FontWeight="Bold" Foreground="#779ECB" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <TextBlock Text=" " FontWeight="Bold" Foreground="#779ECB" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 
                     <!-- Sort by CPU -->
                     <Button Grid.Column="2"
@@ -264,7 +264,7 @@
                           Grid.Row="1"
                           TabIndex="7"
                           IsTabStop="True"
-                          TabNavigation="Once"
+                          TabFocusNavigation="Once"
                           SingleSelectionFollowsFocus="True"
                           UseSystemFocusVisuals="True"
                           ItemsSource="{x:Bind ViewModel.Processes, Mode=OneWay}" 
