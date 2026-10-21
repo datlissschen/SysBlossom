@@ -2,6 +2,7 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using System;
@@ -11,6 +12,7 @@ using System.IO;
 using System.Linq;
 using TaskManager.Models;
 using Windows.Foundation;
+using Windows.System;
 using WinRT.Interop;
 using Path = System.IO.Path;
 
@@ -264,6 +266,61 @@ namespace TaskManager
         {
             ViewModel.FilterText = (sender as TextBox)?.Text ?? string.Empty;
             await ViewModel.RefreshDataAsync();
+        }
+
+        /// <summary>
+        /// Focuses the SearchBox when the user presses Ctrl+F.
+        /// </summary>
+        private void SearchAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            SearchBox.Focus(FocusState.Keyboard);
+            SearchBox.SelectAll();
+            args.Handled = true;
+        }
+
+        /// <summary>
+        /// Allows pressing Escape inside the SearchBox to clear the filter and move focus to the ProcessListView.
+        /// </summary>
+        private void RootGrid_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == VirtualKey.Escape && SearchBox.FocusState != FocusState.Unfocused)
+            {
+                if (!string.IsNullOrEmpty(SearchBox.Text))
+                {
+                    SearchBox.Text = string.Empty;
+                }
+                else
+                {
+                    ProcessListView.Focus(FocusState.Keyboard);
+                }
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>
+        /// Allows keyboard users to open the Subprocess Flyout for the currently focused process row
+        /// by pressing Enter or Right Arrow, and preserves focus during automatic list refreshes.
+        /// </summary>
+        private void ProcessListView_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key is VirtualKey.Enter or VirtualKey.Right)
+            {
+                var focusedElement = FocusManager.GetFocusedElement(this.Content.XamlRoot) as ListViewItem;
+                if (focusedElement == null && ProcessListView.SelectedItem != null)
+                {
+                    focusedElement = ProcessListView.ContainerFromItem(ProcessListView.SelectedItem) as ListViewItem;
+                }
+
+                if (focusedElement != null)
+                {
+                    var subProcessButton = FindChild<Button>(focusedElement, "SubProcessButton");
+                    if (subProcessButton?.Flyout != null)
+                    {
+                        subProcessButton.Flyout.ShowAt(subProcessButton);
+                        e.Handled = true;
+                    }
+                }
+            }
         }
     }
 }
