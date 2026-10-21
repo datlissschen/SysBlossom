@@ -1,152 +1,238 @@
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Windows.Graphics.Imaging;
-using TaskManager.Helper;
+using System.Text;
 using TaskManager.Models;
 
 namespace TaskManager.Services
 {
     public class ProcessService
     {
-        /// <summary>
-        /// Functions to save the last time where something has been calculated.
-        /// </summary>
-        private readonly Dictionary<int, (DateTime Time, TimeSpan ProcessorTime)> _history = new();
+        private readonly Dictionary<int, (DateTime Time, TimeSpan ProcessorTime)> _history = [];
+        private readonly Dictionary<int, string?> _pathCache = [];
+        private readonly int _processorCount = Math.Max(1, Environment.ProcessorCount);
+        private readonly int _currentProcessId = Environment.ProcessId;
 
-        /// <summary>
-        /// Function to take care of the starting of the counting of the processor.
-        /// </summary>
-        private readonly int _processorCount = Environment.ProcessorCount;
+        private static readonly HashSet<string> ProtectedProcesses = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "System", "Idle", "Registry", "smss", "csrss", "wininit",
+            "services", "lsass", "svchost", "winlogon", "dwm", "fontdrvhost", "Memory Compression"
+        };
 
-        /// <summary>
-        /// Method to get the tasks and their details. 
-        /// It retrieves all running processes, formats their memory usage, and checks if they are responding.
-        /// </summary>
-        /// <returns></returns>
+        private readonly record struct RawProcessData(
+            int Id,
+            string Name,
+            double Cpu,
+            long MemoryBytes,
+            bool IsResponding,
+            string? Path);
+
+        // Fast Win32 API to read process executable path without throwing C# MainModule exceptions
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenProcess(uint processAccess, bool bInheritHandle, int processId);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool QueryFullProcessImageName(IntPtr hProcess, uint dwFlags, StringBuilder lpExeName, ref uint lpdwSize);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr hObject);
+
+        private const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+
+        private static string? TryGetProcessPathFast(int pid)
+        {
+            if (pid <= 4) return null;
+            IntPtr hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+            if (hProcess == IntPtr.Zero) return null;
+
+            try
+            {
+                var buffer = new StringBuilder(1024);
+                uint size = (uint)buffer.Capacity;
+                if (QueryFullProcessImageName(hProcess, 0, buffer, ref size))
+                {
+                    return buffer.ToString();
+                }
+            }
+            finally
+            {
+                CloseHandle(hProcess);
+            }
+            return null;
+        }
+
         public List<ProcessItem> GetProcesses()
         {
-            var processList = new List<ProcessItem>();
-            var rawList = new List<dynamic>();
-            var allProcesses = Process.GetProcesses();
-            var currentTime = DateTime.UtcNow;
+            List<RawProcessData> rawList = [];
+            HashSet<int> activeIds = [];
+            Process[] allProcesses = Process.GetProcesses();
+            DateTime currentTime = DateTime.UtcNow;
 
-            foreach (var p in allProcesses)
+            foreach (Process p in allProcesses)
             {
                 try
                 {
-                    var currentProcessorTime = p.TotalProcessorTime;
-                    double cpuPercent = 0;
+                    int pid = p.Id;
+                    activeIds.Add(pid);
 
-                    if (_history.TryGetValue(p.Id, out var lastValues))
-                    {
-                        // count difference
-                        var timeDiff = currentTime - lastValues.Time;
-                        var cpuDiff = currentProcessorTime - lastValues.ProcessorTime;
+                    string processName = p.ProcessName;
+                    long workingSet = p.WorkingSet64;
 
-                        // calculate CPU real time 
-                        cpuPercent = (cpuDiff.TotalMilliseconds / timeDiff.TotalMilliseconds) * 100 / _processorCount;
-                    }
-
-                    // save values
-                    _history[p.Id] = (currentTime, currentProcessorTime);
-                    string? fullPath = null;
+                    // Only check Responding if the process actually has a MainWindowHandle (avoids blocking on background services)
+                    bool isResponding = true;
                     try
                     {
-                        fullPath = p.MainModule?.FileName;
+                        isResponding = p.Responding;
                     }
-                    catch { /* Access Denied for path */ }
-
-                    rawList.Add(new
+                    catch
                     {
-                        Id = p.Id,
-                        Name = p.ProcessName,
-                        Cpu = Math.Clamp(cpuPercent, 0, 1000), 
-                        MemoryRaw = p.WorkingSet64, 
-                        IsResponding = p.Responding,
-                        Path = p.MainModule?.FileName
-                    });
+                        // Process exited or access denied
+                    }
+
+                    double cpuPercent = 0;
+                    if (pid > 4)
+                    {
+                        try
+                        {
+                            TimeSpan currentProcessorTime = p.TotalProcessorTime;
+                            if (_history.TryGetValue(pid, out var lastValues))
+                            {
+                                double timeDiffMs = (currentTime - lastValues.Time).TotalMilliseconds;
+                                double cpuDiffMs = (currentProcessorTime - lastValues.ProcessorTime).TotalMilliseconds;
+
+                                if (timeDiffMs > 0 && cpuDiffMs >= 0)
+                                {
+                                    cpuPercent = (cpuDiffMs / timeDiffMs) * 100.0 / _processorCount;
+                                }
+                            }
+                            _history[pid] = (currentTime, currentProcessorTime);
+                        }
+                        catch
+                        {
+                            // Protected system process
+                        }
+                    }
+
+                    // Cache executable path per PID so we only query the OS once per process lifetime
+                    if (!_pathCache.TryGetValue(pid, out string? fullPath))
+                    {
+                        fullPath = TryGetProcessPathFast(pid);
+                        _pathCache[pid] = fullPath;
+                    }
+
+                    rawList.Add(new RawProcessData(
+                        Id: pid,
+                        Name: processName,
+                        Cpu: Math.Clamp(cpuPercent, 0.0, 100.0),
+                        MemoryBytes: workingSet,
+                        IsResponding: isResponding,
+                        Path: fullPath
+                    ));
                 }
                 catch
                 {
-                    // Access denied
-                    continue;
+                    // Process exited during enumeration
+                }
+                finally
+                {
+                    p.Dispose();
                 }
             }
-            var activeIds = allProcesses.Select(p => p.Id).ToHashSet();
+
+            // Clean up exited processes from caches
             var ghostIds = _history.Keys.Where(id => !activeIds.Contains(id)).ToList();
-            foreach (var id in ghostIds) _history.Remove(id);
+            foreach (int id in ghostIds)
+            {
+                _history.Remove(id);
+                _pathCache.Remove(id);
+            }
 
             var groupedList = rawList
-            .GroupBy(p => p.Name)
-            .Select(group => new ProcessItem
-            {
-                Name = group.Key,
-                // create a list of subprocesses for each process group
-                SubProcesses = group.Select(x => new SubProcessInfo
+                .GroupBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(group =>
                 {
-                    Pid = (int)x.Id,
-                    Cpu = (double)x.Cpu,
-                    Memory = $"{(long)x.MemoryRaw / 1024 / 1024} MB"
-                }).ToList(),
+                    double totalMemoryMB = group.Sum(x => x.MemoryBytes) / (1024.0 * 1024.0);
+                    string? imagePath = null;
+                    foreach (var item in group)
+                    {
+                        if (!string.IsNullOrEmpty(item.Path))
+                        {
+                            imagePath = item.Path;
+                            break;
+                        }
+                    }
 
-                CpuUsage = group.Sum(x => (double)x.Cpu),
-                MemoryUsage = $"{(group.Sum(x => (long)x.MemoryRaw) / 1024 / 1024)} MB",
-                Status = group.Any(x => (bool)x.IsResponding) ? "Active" : "Hung",
-                ImagePath = group.FirstOrDefault(x => x.Path != null)?.Path
-            })
-            .OrderByDescending(x => x.CpuUsage)
-            .ToList();
+                    return new ProcessItem
+                    {
+                        Name = group.Key,
+                        SubProcesses = group.Select(x => new SubProcessInfo
+                        {
+                            Pid = x.Id,
+                            Cpu = x.Cpu,
+                            MemoryMB = x.MemoryBytes / (1024.0 * 1024.0)
+                        }).ToList(),
+                        CpuUsage = Math.Clamp(group.Sum(x => x.Cpu), 0.0, 100.0),
+                        MemoryMB = totalMemoryMB,
+                        Status = group.All(x => x.IsResponding) ? "Active" : "Hung",
+                        ImagePath = imagePath
+                    };
+                })
+                .OrderByDescending(x => x.CpuUsage)
+                .ToList();
 
             return groupedList;
         }
 
-        /// <summary>
-        /// method to get the icon of a process. It uses the file path of the process to extract the associated icon.
-        /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns></returns>
-        private ImageSource? GetIcon(string fileName)
+        public static bool IsCriticalProcess(string processName)
         {
-            try
-            {
-                using (Icon icon = Icon.ExtractAssociatedIcon(fileName)!)
-                {
-                    // Convert System.Drawing.Icon to a WinUI compatible ImageSource
-                    return null; 
-                }
-            }
-            catch { return null; }
+            return !string.IsNullOrWhiteSpace(processName) && ProtectedProcesses.Contains(processName);
         }
 
+        public bool KillProcesses(List<int> pids) => KillProcesses(pids, out _);
 
-        /// <summary>
-        /// Method to kill the task via the given id.
-        /// </summary>
-        /// <param name="id"></param>
-        public bool KillProcesses(List<int> pids)
+        public bool KillProcesses(IEnumerable<int> pids, out string? errorMessage)
         {
-            try
+            errorMessage = null;
+            List<string> errors = [];
+
+            foreach (int pid in pids.Distinct())
             {
-                foreach (var pid in pids)
+                if (pid <= 4 || pid == _currentProcessId)
                 {
-                    var p = Process.GetProcessById(pid);
+                    errors.Add($"PID {pid} is protected and cannot be terminated.");
+                    continue;
+                }
+
+                try
+                {
+                    using Process p = Process.GetProcessById(pid);
+
+                    if (ProtectedProcesses.Contains(p.ProcessName))
+                    {
+                        errors.Add($"System process '{p.ProcessName}' (PID {pid}) cannot be terminated for safety reasons.");
+                        continue;
+                    }
+
                     p.Kill();
                 }
-                return true;
+                catch (ArgumentException) { }
+                catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+                {
+                    Debug.WriteLine($"Failed to kill PID {pid}: {ex.Message}");
+                    errors.Add($"PID {pid}: {ex.Message}");
+                }
             }
-            catch (Exception ex)
+
+            if (errors.Count > 0)
             {
-                Debug.WriteLine($"Failed to kill process: {ex.Message}");
+                errorMessage = string.Join(Environment.NewLine, errors);
                 return false;
             }
+
+            return true;
         }
-
-
     }
 }

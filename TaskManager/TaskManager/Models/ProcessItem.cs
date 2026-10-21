@@ -3,50 +3,43 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using TaskManager.Helper;
-using TaskManager.Services;
-using TaskManager.Models;
 
-namespace TaskManager
+namespace TaskManager.Models
 {
     /// <summary>
-    /// class represents a single entry in the taskmanager table.
+    /// Represents a single grouped entry in the task manager table.
+    /// Marked partial for CsWinRT AOT / ABI source generation.
     /// </summary>
-    public class ProcessItem : INotifyPropertyChanged
+    public partial class ProcessItem : INotifyPropertyChanged
     {
-        public List<SubProcessInfo> SubProcesses { get; set; } = new();
-        public int PidCount => SubProcesses?.Count ?? 0;
-        public string Name { get; set; } = string.Empty;
-        public string MemoryUsage { get; set; } = string.Empty;
-        public string Status { get; set; } = "Active";
-        public string? ImagePath { get; set; }
-        public string CpuUsageDisplay => $"{CpuUsage:F1}%";
-
-        // private fields for properties that require change notification
+        private List<SubProcessInfo> _subProcesses = [];
         private double _cpuUsage;
+        private double _memoryMB;
+        private string _status = "Active";
         private bool _isFlyoutOpen;
         private ImageSource? _iconSource;
 
-        public event PropertyChangedEventHandler? PropertyChanged;
+        public string Name { get; set; } = string.Empty;
+        public string? ImagePath { get; set; }
 
-        /// <summary>
-        /// Method to trigger the PropertyChanged event, which notifies the UI that a property value has changed and the display should be updated accordingly.
-        /// </summary>
-        /// <param name="name">The name of the property that changed.</param>
-        protected void OnPropertyChanged([CallerMemberName] string? name = null)
+        public List<SubProcessInfo> SubProcesses
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+            get => _subProcesses;
+            set
+            {
+                _subProcesses = value ?? [];
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PidCount));
+            }
         }
 
-        /// <summary>
-        /// method triggers the change of the CPU usage and notifies the UI to update the display.
-        /// </summary>
+        public int PidCount => _subProcesses.Count;
+
         public double CpuUsage
         {
             get => _cpuUsage;
             set
             {
-                // Only notify if the change is significant (> 0.1%)
                 if (Math.Abs(_cpuUsage - value) < 0.1) return;
                 _cpuUsage = value;
                 OnPropertyChanged();
@@ -54,23 +47,60 @@ namespace TaskManager
             }
         }
 
-        /// <summary>
-        /// Method to get or set the icon source for the process. 
-        /// It uses the ImageSource type, which is compatible with WinUI, to represent the icon associated with the process.
-        /// </summary>
+        public string CpuUsageDisplay => $"{CpuUsage:F1}%";
+
+        public double MemoryMB
+        {
+            get => _memoryMB;
+            set
+            {
+                if (Math.Abs(_memoryMB - value) < 0.1) return;
+                _memoryMB = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(MemoryUsage));
+            }
+        }
+
+        public string MemoryUsage => $"{MemoryMB:F0} MB";
+
+        public string Status
+        {
+            get => _status;
+            set
+            {
+                if (_status == value) return;
+                _status = value;
+                OnPropertyChanged();
+            }
+        }
+
         public ImageSource? IconSource
         {
             get => _iconSource;
-            set { _iconSource = value; OnPropertyChanged(); }
+            set
+            {
+                if (_iconSource == value) return;
+                _iconSource = value;
+                OnPropertyChanged();
+            }
         }
 
-        /// <summary>
-        /// Gets or sets a value indicating whether the flyout is currently open.
-        /// </summary>
         public bool IsFlyoutOpen
         {
             get => _isFlyoutOpen;
-            set { _isFlyoutOpen = value; OnPropertyChanged(); }
+            set
+            {
+                if (_isFlyoutOpen == value) return;
+                _isFlyoutOpen = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
     }
 }

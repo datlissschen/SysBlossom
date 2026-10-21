@@ -2,114 +2,111 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
-using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Drawing;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using WinRT.Interop;
 using TaskManager.Models;
-using TaskManager.Services;
-using TaskManager.Helper;
+using Windows.Foundation;
+using Windows.System;
+using WinRT.Interop;
+using Path = System.IO.Path;
 
 namespace TaskManager
 {
     public sealed partial class MainWindow : Window
     {
         public MainViewModel ViewModel { get; } = new();
-        private DispatcherTimer _refreshTimer;
+        private readonly DispatcherTimer _refreshTimer;
         private readonly List<double> _cpuHistory = new();
         private readonly List<double> _ramHistory = new();
         private const int MaxPoints = 50;
+
         public MainWindow()
         {
             this.InitializeComponent();
 
             SetWindowIcon("Assets/AppIcon.ico");
 
-            _refreshTimer = new DispatcherTimer();
-            _refreshTimer.Interval = TimeSpan.FromSeconds(2);
-            _refreshTimer.Tick += async (s, e) => await ViewModel.RefreshDataAsync();
-            //  set DataContext for Bindings
-            if (this.Content is FrameworkElement root) root.DataContext = ViewModel;
+            if (this.Content is FrameworkElement root)
+            {
+                root.DataContext = ViewModel;
+            }
 
-            // Initialize the ViewModel with the DispatcherQueue to allow it to update the UI from background threads.
-            // This is necessary for the ViewModel to perform asynchronous operations and update the UI without blocking the main thread.
             ViewModel.Initialize(this.DispatcherQueue);
 
-            _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-            _refreshTimer.Tick += async (s, e) => {
-                // find intern scollviewer to save the scroll position before refreshing data
-                var scrollViewer = FindChild<ScrollViewer>(ProcessListView, null);
-                double offset = scrollViewer?.VerticalOffset ?? 0;
+            // EINZIGER Timer für das Intervall-Update (Duplikat wurde entfernt)
+            _refreshTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(2)
+            };
+            _refreshTimer.Tick += OnRefreshTimerTick;
 
-                await ViewModel.RefreshDataAsync();
-                UpdateUIEffects();
-
-                if (scrollViewer != null)
+            ViewModel.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(MainViewModel.TotalCpu))
                 {
-                    _ = DispatcherQueue.TryEnqueue(() => {
-                        scrollViewer.ChangeView(null, offset, null, true);
-                    });
+                    UpdateMascot();
                 }
             };
 
-            ViewModel.PropertyChanged += (s, e) => {
-                if (e.PropertyName == nameof(MainViewModel.TotalCpu)) UpdateMascot();
-            };
+            // Sauberes Aufräumen beim Schließen des Fensters
+            this.Closed += OnWindowClosed;
 
             _refreshTimer.Start();
             _ = ViewModel.RefreshDataAsync();
         }
 
-        /// <summary>
-        /// Updates the visual effects and data displayed in the CPU and RAM usage graphs.
-        /// </summary>
-        /// <remarks>Call this method to refresh the UI elements that represent CPU and RAM usage. This
-        /// ensures that the displayed information reflects the latest performance data.</remarks>
-        private void UpdateUIEffects()
+        private async void OnRefreshTimerTick(object? sender, object e)
         {
-            UpdateGraph(CpuGraphLine, _cpuHistory, ViewModel.TotalCpu, 100, CpuSparkle);
-            UpdateGraph(RamGraphLine, _ramHistory, ViewModel.TotalRam, 32000, RamSparkle);
+            var scrollViewer = FindChild<ScrollViewer>(ProcessListView);
+            double offset = scrollViewer?.VerticalOffset ?? 0;
+
+            await ViewModel.RefreshDataAsync();
+            UpdateUIEffects();
+
+            if (scrollViewer != null)
+            {
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    scrollViewer.ChangeView(null, offset, null, true);
+                });
+            }
         }
 
-        /// <summary>
-        /// Updates the mascot's playback rate based on the current CPU usage.
-        /// </summary>
-        /// <remarks>Sets the mascot's playback rate to 2.0 if the total CPU usage exceeds 70 percent;
-        /// otherwise, sets it to 1.0. This method has no effect if the mascot player is not initialized.</remarks>
+        private void OnWindowClosed(object sender, WindowEventArgs args)
+        {
+            _refreshTimer.Stop();
+            _refreshTimer.Tick -= OnRefreshTimerTick;
+            ViewModel.Dispose();
+        }
+
+        private void UpdateUIEffects()
+        {
+            UpdateGraph(CpuGraphLine, _cpuHistory, ViewModel.TotalCpu, 100.0, CpuSparkle);
+            UpdateGraph(RamGraphLine, _ramHistory, ViewModel.TotalRam, 32768.0, RamSparkle);
+        }
+
         private void UpdateMascot()
         {
             if (MascotPlayer != null)
-                MascotPlayer.PlaybackRate = ViewModel.TotalCpu > 70 ? 2.0 : 1.0;
+            {
+                MascotPlayer.PlaybackRate = ViewModel.TotalCpu > 70.0 ? 2.0 : 1.0;
+            }
         }
 
-
-        /// <summary>
-        /// Click handler for the columns.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private async void Header_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button btn && btn.Tag is string column)
+            if (sender is Button { Tag: string column })
             {
                 if (ViewModel.SortColumn == column)
+                {
                     ViewModel.IsAscending = !ViewModel.IsAscending;
+                }
                 else
                 {
                     ViewModel.SortColumn = column;
@@ -119,70 +116,59 @@ namespace TaskManager
             }
         }
 
-        /// <summary>
-        /// Handles the Click event of the Refresh button by asynchronously refreshing the data in the associated view
-        /// model.
-        /// </summary>
-        /// <param name="sender">The source of the event, typically the Refresh button.</param>
-        /// <param name="e">The event data associated with the Click event.</param>
         private async void RefreshButton_Click(object sender, RoutedEventArgs e)
-            => await ViewModel.RefreshDataAsync();
-
-        /// <summary>
-        /// Method for the create the context menu for the process list. 
-        /// It creates a menu with a "Kill Process" option that allows the user to terminate the selected processes.
-        /// </summary>
-        /// <param name="sender">The source of the event, typically the Kill button.</param>
-        /// <param name="e">The event data associated with the Click event.</param>
-        private void KillButton_Click(object sender, RoutedEventArgs e)
         {
-            var selected = ProcessListView.SelectedItems.Cast<ProcessItem>().ToList();
-            if (!selected.Any()) return;
-
-            var service = new ProcessService();
-            foreach (var item in selected)
-            {
-                var pids = item.SubProcesses.Select(s => s.Pid).ToList();
-                service.KillProcesses(pids);
-            }
-            _ = ViewModel.RefreshDataAsync();
+            await ViewModel.RefreshDataAsync();
+            UpdateUIEffects();
         }
 
-
-        /// <summary>
-        /// helper for drawing the graph. It takes the new value, adds it to the history, and updates the Polyline points accordingly.
-        /// </summary>
-        /// <param name="line"></param>
-        /// <param name="history"></param>
-        /// <param name="newValue"></param>
-        /// <param name="max"></param>
-        private void UpdateGraph(Polyline line, List<double> history, double newValue, double max, TextBlock sparkle)
+        private async void KillButton_Click(object sender, RoutedEventArgs e)
         {
+            var selected = ProcessListView.SelectedItems.OfType<ProcessItem>().ToList();
+            if (selected.Count == 0) return;
+
+            var (success, errorMessage) = await ViewModel.KillSelectedProcessesAsync(selected);
+            if (!success && !string.IsNullOrEmpty(errorMessage) && this.Content is FrameworkElement root)
+            {
+                var dialog = new ContentDialog
+                {
+                    Title = "Prozess konnte nicht beendet werden",
+                    Content = errorMessage,
+                    CloseButtonText = "OK",
+                    XamlRoot = root.XamlRoot
+                };
+                await dialog.ShowAsync();
+            }
+        }
+
+        private void UpdateGraph(Polyline? line, List<double> history, double newValue, double max, TextBlock? sparkle)
+        {
+            if (line == null) return;
+
             history.Add(newValue);
-            if (history.Count > MaxPoints) history.RemoveAt(0);
+            if (history.Count > MaxPoints)
+            {
+                history.RemoveAt(0);
+            }
 
             var points = new PointCollection();
-
-            // Dynamical width
             var canvas = line.Parent as Canvas;
-            double width = canvas.ActualWidth;
 
-            if (width <= 0) width = 300;
-
-            double height = canvas.Height;
+            double width = canvas is { ActualWidth: > 0 } ? canvas.ActualWidth : 300.0;
+            double height = canvas is { ActualHeight: > 0 } ? canvas.ActualHeight : (canvas?.Height > 0 ? canvas.Height : 60.0);
 
             double stepX = width / (MaxPoints - 1);
-
             double lastX = 0;
             double lastY = height;
+            double safeMax = max <= 0 ? 100.0 : max;
 
             for (int i = 0; i < history.Count; i++)
             {
                 double x = i * stepX;
-                double y = height - (history[i] / max * height);
-                y = Math.Clamp(y, 0, height);
+                double y = height - (history[i] / safeMax * height);
+                y = Math.Clamp(y, 0.0, height);
 
-                points.Add(new Windows.Foundation.Point(x, y));
+                points.Add(new Point(x, y));
 
                 lastX = x;
                 lastY = y;
@@ -190,8 +176,7 @@ namespace TaskManager
 
             line.Points = points;
 
-            // Sparkle position
-            if (history.Count > 0)
+            if (sparkle != null && history.Count > 0)
             {
                 sparkle.Visibility = Visibility.Visible;
                 Canvas.SetLeft(sparkle, lastX - 8);
@@ -199,49 +184,61 @@ namespace TaskManager
             }
         }
 
-        /// <summary>
-        /// Handles the SelectionChanged event for the process list view and plays an animation for each newly selected
-        /// item.
-        /// </summary>
-        /// <remarks>The animation is only played for items that have just been selected. The method is
-        /// asynchronous and will not block the UI thread while animations are playing.</remarks>
-        /// <param name="sender">The source of the event, typically the process list view control.</param>
-        /// <param name="e">An object that contains event data, including the items that were added to or removed from the selection.</param>
-        private async void ProcessListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ProcessListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            // If the user clicks/selects items with the mouse, freeze list reordering
+            ViewModel.HasUserSelection = ProcessListView.SelectedItems.Count > 0;
+
+            // Existing animation logic for newly selected items...
             foreach (var item in e.AddedItems)
             {
-                // get visual for data object
                 var container = ProcessListView.ContainerFromItem(item) as ListViewItem;
                 if (container == null) continue;
 
-                // search heartburstplayer
                 var heartPlayer = FindChild<AnimatedVisualPlayer>(container, "HeartBurstPlayer");
-
                 if (heartPlayer != null)
                 {
                     heartPlayer.Visibility = Visibility.Visible;
-                    await heartPlayer.PlayAsync(0, 1, false);
+                    _ = heartPlayer.PlayAsync(0, 1, false);
                     heartPlayer.Visibility = Visibility.Collapsed;
                 }
             }
         }
 
+        private void ProcessListView_GotFocus(object sender, RoutedEventArgs e)
+        {
+            ViewModel.IsListFocused = true;
+        }
+
+        private void ProcessListView_LostFocus(object sender, RoutedEventArgs e)
+        {
+            // Only clear focus lock if no items are currently selected by the user
+            if (ProcessListView.SelectedItems.Count == 0)
+            {
+                ViewModel.IsListFocused = false;
+            }
+        }
+
         /// <summary>
-        /// helper to find child control by name and type. It recursively searches the visual tree starting from the specified parent object.
+        /// Sucht rekursiv im visuellen Baum nach einem Kind-Element bestimmten Typs und optionalen Namens.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="parent"></param>
-        /// <param name="childName"></param>
-        /// <returns></returns>
-        public static T FindChild<T>(DependencyObject parent, string childName) where T : DependencyObject
+        public static T? FindChild<T>(DependencyObject? parent, string? childName = null) where T : DependencyObject
         {
             if (parent == null) return null;
+
             int childrenCount = VisualTreeHelper.GetChildrenCount(parent);
             for (int i = 0; i < childrenCount; i++)
             {
                 var child = VisualTreeHelper.GetChild(parent, i);
-                if (child is T tChild && (child as FrameworkElement).Name == childName) return tChild;
+
+                if (child is T tChild)
+                {
+                    if (string.IsNullOrEmpty(childName) ||
+                        (child is FrameworkElement fe && fe.Name == childName))
+                    {
+                        return tChild;
+                    }
+                }
 
                 var result = FindChild<T>(child, childName);
                 if (result != null) return result;
@@ -249,59 +246,99 @@ namespace TaskManager
             return null;
         }
 
-        /// <summary>
-        /// Handles the Opening event of a Flyout control to update the associated data context state.
-        /// </summary>
-        /// <remarks>This method is typically used to synchronize the UI state with the underlying data
-        /// model when a Flyout is opened. It assumes that the Flyout's Target has a DataContext of type
-        /// ProcessItem.</remarks>
-        /// <param name="sender">The source of the event, expected to be a Flyout control whose Opening event is being handled.</param>
-        /// <param name="e">The event data associated with the Opening event.</param>
         private void Flyout_Opening(object sender, object e)
         {
-            if ((sender as Flyout).Target.DataContext is ProcessItem item)
+            if (sender is Flyout { Target.DataContext: ProcessItem item })
             {
                 item.IsFlyoutOpen = true;
             }
         }
-        /// <summary>
-        /// Handles the Closing event of a Flyout control to update the associated data context state.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+
         private void Flyout_Closed(object sender, object e)
         {
-            if ((sender as Flyout).Target.DataContext is ProcessItem item)
+            if (sender is Flyout { Target.DataContext: ProcessItem item })
             {
                 item.IsFlyoutOpen = false;
             }
         }
 
-        /// <summary>
-        /// Method to set the window icon using the AppWindow API. 
-        /// It retrieves the window handle, gets the AppWindow instance, and sets the icon from the specified path.
-        /// </summary>
-        /// <param name="iconPath"></param>
         private void SetWindowIcon(string iconPath)
         {
-            // Hol dir das Fenster-Handle (HWND)
-            IntPtr hWnd = WindowNative.GetWindowHandle(this);
-            WindowId windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
-            AppWindow appWindow = AppWindow.GetFromWindowId(windowId);
+            try
+            {
+                string fullPath = Path.Combine(AppContext.BaseDirectory, iconPath);
+                if (!File.Exists(fullPath)) return;
 
-            // Icon zuweisen
-            appWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, iconPath));
+                IntPtr hWnd = WindowNative.GetWindowHandle(this);
+                WindowId windowId = Win32Interop.GetWindowIdFromWindow(hWnd);
+                AppWindow appWindow = AppWindow.GetFromWindowId(windowId);
+                appWindow.SetIcon(fullPath);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Fenster-Icon konnte nicht geladen werden: {ex.Message}");
+            }
         }
-        
-        /// Method to watch over if the serachbox text changes and update the filter text in the viewmodel accordingly. 
-        /// This allows the process list to be filtered based on the user's input in real-time.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+
+        private async void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             ViewModel.FilterText = (sender as TextBox)?.Text ?? string.Empty;
+            await ViewModel.RefreshDataAsync();
+        }
+
+        /// <summary>
+        /// Focuses the SearchBox when the user presses Ctrl+F.
+        /// </summary>
+        private void SearchAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            SearchBox.Focus(FocusState.Keyboard);
+            SearchBox.SelectAll();
+            args.Handled = true;
+        }
+
+        /// <summary>
+        /// Allows pressing Escape inside the SearchBox to clear the filter and move focus to the ProcessListView.
+        /// </summary>
+        private void RootGrid_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == VirtualKey.Escape && SearchBox.FocusState != FocusState.Unfocused)
+            {
+                if (!string.IsNullOrEmpty(SearchBox.Text))
+                {
+                    SearchBox.Text = string.Empty;
+                }
+                else
+                {
+                    ProcessListView.Focus(FocusState.Keyboard);
+                }
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>
+        /// Allows keyboard users to open the Subprocess Flyout for the currently focused process row
+        /// by pressing Enter or Right Arrow, and preserves focus during automatic list refreshes.
+        /// </summary>
+        private void ProcessListView_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key is VirtualKey.Enter or VirtualKey.Right)
+            {
+                var focusedElement = FocusManager.GetFocusedElement(this.Content.XamlRoot) as ListViewItem;
+                if (focusedElement == null && ProcessListView.SelectedItem != null)
+                {
+                    focusedElement = ProcessListView.ContainerFromItem(ProcessListView.SelectedItem) as ListViewItem;
+                }
+
+                if (focusedElement != null)
+                {
+                    var subProcessButton = FindChild<Button>(focusedElement, "SubProcessButton");
+                    if (subProcessButton?.Flyout != null)
+                    {
+                        subProcessButton.Flyout.ShowAt(subProcessButton);
+                        e.Handled = true;
+                    }
+                }
+            }
         }
     }
 }
-
