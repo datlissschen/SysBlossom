@@ -46,12 +46,20 @@ namespace TaskManager.Helper
             using var g = Graphics.FromImage(bitmap);
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
-            // Draw the gear emoji
-            using var font = new Font("Segoe UI Emoji", 20);
+            // Halve the font size from 20 to 10
+            using var font = new Font("Segoe UI Emoji", 15);
             var brush = Brushes.Gray;
 
-            // Adjust coordinates to center the emoji roughly in the 32x32 square
-            g.DrawString("⚙️", font, brush, new PointF(-4, 0));
+            // Set up formatting to perfectly center the smaller emoji
+            using var format = new StringFormat
+            {
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center
+            };
+
+            // Draw the gear emoji perfectly centered inside the 32x32 area
+            var rect = new RectangleF(0, 0, 32, 32);
+            g.DrawString("⚙️", font, brush, rect, format);
 
             return GetSoftwareBitmapFromBitmap(bitmap);
         }
