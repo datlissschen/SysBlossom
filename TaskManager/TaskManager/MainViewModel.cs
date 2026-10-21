@@ -137,7 +137,7 @@ namespace TaskManager
                     }
                 }
 
-                bool isUserBusy = Processes.Any(p => p.IsFlyoutOpen);
+                bool isUserBusy = Processes.Any(p => p.IsFlyoutOpen) || IsListFocused;
 
                 for (int i = 0; i < sortedList.Count; i++)
                 {
@@ -149,6 +149,7 @@ namespace TaskManager
                         existingItem.Status = newItem.Status;
                         existingItem.SubProcesses = newItem.SubProcesses;
 
+                        // If the user is navigating or a flyout is open, update values in place without reordering!
                         if (!isUserBusy)
                         {
                             int oldIndex = Processes.IndexOf(existingItem);
@@ -311,6 +312,18 @@ namespace TaskManager
                 _refreshLock.Dispose();
             }
             GC.SuppressFinalize(this);
+        }
+
+        private bool _isListFocused;
+        public bool IsListFocused
+        {
+            get => _isListFocused;
+            set
+            {
+                if (_isListFocused == value) return;
+                _isListFocused = value;
+                OnPropertyChanged();
+            }
         }
     }
 }
