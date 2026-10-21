@@ -158,7 +158,7 @@
                     </StackPanel>
 
                     <StackPanel Grid.Row="1" Margin="5" Width="230" VerticalAlignment="Center">
-                        <TextBlock Text="☁️ Total RAM" FontSize="12" Foreground="#FFB7C5" FontWeight="Bold"/>
+                        <TextBlock Text="🧠 Total RAM" FontSize="12" Foreground="#FFB7C5" FontWeight="Bold"/>
                         <Canvas x:Name="RamCanvas" Height="40" VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
                             <Polyline x:Name="RamGraphLine" Stroke="#FFB7C5" StrokeThickness="3" StrokeLineJoin="Round"/>
                             <TextBlock x:Name="RamSparkle" Text="✧" Foreground="#FF69B4" FontSize="18" Visibility="Collapsed"/>
@@ -200,7 +200,7 @@
                             VerticalAlignment="Center"
                             UseSystemFocusVisuals="True"
                             FocusVisualPrimaryBrush="#FF69B4">
-                        <TextBlock Text="🌸 Process ⇅" FontSize="13" Foreground="#779ECB" FontWeight="SemiBold"/>
+                        <TextBlock Text="🌸 Process" FontSize="13" Foreground="#779ECB" FontWeight="SemiBold"/>
                         <ToolTipService.ToolTip>
                             <ToolTip Content="Click or press Enter to sort by Process Name." />
                         </ToolTipService.ToolTip>
@@ -222,8 +222,8 @@
                             UseSystemFocusVisuals="True"
                             FocusVisualPrimaryBrush="#FF69B4">
                         <StackPanel>
-                            <TextBlock Text="⚡ CPU ⇅" FontSize="13" Foreground="#779ECB" FontWeight="SemiBold" />
-                            <TextBlock Text="{x:Bind ViewModel.TotalCpuDisplay, Mode=OneWay}" FontSize="12" Foreground="#779ECB" FontWeight="Bold"/>
+                            <TextBlock Text="⚡ CPU " FontSize="13" Foreground="#779ECB" FontWeight="SemiBold" />
+                            <TextBlock Text=" {x:Bind ViewModel.TotalCpuDisplay, Mode=OneWay}" FontSize="12" Foreground="#779ECB" FontWeight="Bold"/>
                         </StackPanel>
                         <ToolTipService.ToolTip>
                             <ToolTip Content="Click or press Enter to sort by CPU Usage." />
@@ -244,7 +244,7 @@
                             UseSystemFocusVisuals="True"
                             FocusVisualPrimaryBrush="#FF69B4">
                         <StackPanel>
-                            <TextBlock Text="🧠 RAM ⇅" FontSize="13" Foreground="#779ECB" FontWeight="SemiBold" />
+                            <TextBlock Text="🧠 RAM " FontSize="13" Foreground="#779ECB" FontWeight="SemiBold" />
                             <TextBlock Text="{x:Bind ViewModel.TotalRamDisplay, Mode=OneWay}" FontSize="12" Foreground="#FFB7C5" FontWeight="Bold"/>
                         </StackPanel>
                         <ToolTipService.ToolTip>
