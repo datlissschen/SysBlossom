@@ -82,7 +82,15 @@ namespace TaskManager.Services
                     long workingSet = p.WorkingSet64;
 
                     // Only check Responding if the process actually has a MainWindowHandle (avoids blocking on background services)
-                    bool isResponding = p.MainWindowHandle == IntPtr.Zero || p.Responding;
+                    bool isResponding = true;
+                    try
+                    {
+                        isResponding = p.Responding;
+                    }
+                    catch
+                    {
+                        // Process exited or access denied
+                    }
 
                     double cpuPercent = 0;
                     if (pid > 4)

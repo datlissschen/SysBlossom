@@ -244,16 +244,17 @@ namespace TaskManager
                                     }
                                 }
                             }
-                            catch (Exception ex)
+                            catch
                             {
-                                Debug.WriteLine($"Icon extraction failed ({path}): {ex.Message}");
+                                // Ignore locked or inaccessible executables
                             }
                             return null;
                         }, token);
 
                         if (softwareBitmap != null && _dispatcher != null && !token.IsCancellationRequested)
                         {
-                            _dispatcher.TryEnqueue(async () =>
+                            var tcs = new TaskCompletionSource();
+                            bool enqueued = _dispatcher.TryEnqueue(async () =>
                             {
                                 try
                                 {
@@ -262,37 +263,39 @@ namespace TaskManager
                                     _localIconCache[path] = bitmapSource;
                                     item.IconSource = bitmapSource;
                                 }
-                                catch (Exception ex)
+                                catch
                                 {
-                                    Debug.WriteLine($"Failed to set SoftwareBitmapSource: {ex.Message}");
+                                    // Ignore WinRT imaging errors
                                 }
                                 finally
                                 {
-                                    softwareBitmap.Dispose();
+                                    tcs.TrySetResult();
                                 }
                             });
+
+                            if (enqueued)
+                            {
+                                await tcs.Task;
+                            }
                         }
-                        else
-                        {
-                            softwareBitmap?.Dispose();
-                        }
+
+                        await Task.Delay(15, token);
                     }
                     else
                     {
-                        await Task.Delay(150, token);
+                        await Task.Delay(250, token);
                     }
                 }
                 catch (OperationCanceledException)
                 {
                     break;
                 }
-                catch (Exception ex)
+                catch
                 {
-                    Debug.WriteLine($"Unexpected error in IconWorker: {ex.Message}");
+                    // Prevent background task from crashing the app
                 }
             }
         }
-
         public event PropertyChangedEventHandler? PropertyChanged;
 
         protected void OnPropertyChanged([CallerMemberName] string? name = null) =>
