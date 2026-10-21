@@ -184,20 +184,38 @@ namespace TaskManager
             }
         }
 
-        private async void ProcessListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ProcessListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            // If the user clicks/selects items with the mouse, freeze list reordering
+            ViewModel.HasUserSelection = ProcessListView.SelectedItems.Count > 0;
+
+            // Existing animation logic for newly selected items...
             foreach (var item in e.AddedItems)
             {
-                if (ProcessListView.ContainerFromItem(item) is not ListViewItem container)
-                    continue;
+                var container = ProcessListView.ContainerFromItem(item) as ListViewItem;
+                if (container == null) continue;
 
                 var heartPlayer = FindChild<AnimatedVisualPlayer>(container, "HeartBurstPlayer");
                 if (heartPlayer != null)
                 {
                     heartPlayer.Visibility = Visibility.Visible;
-                    await heartPlayer.PlayAsync(0, 1, false);
+                    _ = heartPlayer.PlayAsync(0, 1, false);
                     heartPlayer.Visibility = Visibility.Collapsed;
                 }
+            }
+        }
+
+        private void ProcessListView_GotFocus(object sender, RoutedEventArgs e)
+        {
+            ViewModel.IsListFocused = true;
+        }
+
+        private void ProcessListView_LostFocus(object sender, RoutedEventArgs e)
+        {
+            // Only clear focus lock if no items are currently selected by the user
+            if (ProcessListView.SelectedItems.Count == 0)
+            {
+                ViewModel.IsListFocused = false;
             }
         }
 

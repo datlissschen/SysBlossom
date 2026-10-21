@@ -137,7 +137,7 @@ namespace TaskManager
                     }
                 }
 
-                bool isUserBusy = Processes.Any(p => p.IsFlyoutOpen) || IsListFocused;
+                bool isUserBusy = Processes.Any(p => p.IsFlyoutOpen) || IsListFocused || HasUserSelection;
 
                 for (int i = 0; i < sortedList.Count; i++)
                 {
@@ -322,6 +322,18 @@ namespace TaskManager
             {
                 if (_isListFocused == value) return;
                 _isListFocused = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool _hasUserSelection;
+        public bool HasUserSelection
+        {
+            get => _hasUserSelection;
+            set
+            {
+                if (_hasUserSelection == value) return;
+                _hasUserSelection = value;
                 OnPropertyChanged();
             }
         }
