@@ -28,6 +28,9 @@ namespace TaskManager
         private CancellationTokenSource? _cts;
         private DispatcherQueue? _dispatcher;
         private bool _isDisposed;
+        private ImageSource? _defaultIconSource;
+        private bool _isListFocused;
+        private bool _hasUserSelection;
 
         public MainViewModel() : this(new ProcessService())
         {
@@ -173,8 +176,8 @@ namespace TaskManager
                         }
                         else
                         {
-                            // ADD DEFAULT ICON FOR PROCESSES WITH NO IMAGE PATH
-                            newItem.IconSource = GetDefaultIconSource();
+                            // Process has no path, push it to the queue anyway to get the default icon
+                            _iconQueue.Enqueue(newItem);
                         }
 
                         Processes.Insert(i, newItem);
@@ -219,8 +222,15 @@ namespace TaskManager
                     if (_iconQueue.TryDequeue(out var item))
                     {
                         string? path = item.ImagePath;
-                        if (string.IsNullOrEmpty(path) || item.IconSource != null)
+                        if (item.IconSource != null)
                         {
+                            continue;
+                        }
+
+                        // If we don't have a path, just assign the default icon and continue
+                        if (string.IsNullOrEmpty(path))
+                        {
+                            await AssignDefaultIconAsync(item);
                             continue;
                         }
 
@@ -257,13 +267,6 @@ namespace TaskManager
                             return null;
                         }, token);
 
-                        if (softwareBitmap == null)
-                        {
-                            // Use your default gear emoji icon
-                            softwareBitmap = await Task.Run(() =>
-                                IconHelper.GetSoftwareBitmapFromIcon(GetDefaultGearIcon()), token);
-                        }
-
                         if (softwareBitmap != null && _dispatcher != null && !token.IsCancellationRequested)
                         {
                             var tcs = new TaskCompletionSource();
@@ -293,8 +296,8 @@ namespace TaskManager
                         }
                         else
                         {
-                            // If we still have no bitmap, use default
-                            _dispatcher?.TryEnqueue(() => item.IconSource = GetDefaultIconSource());
+                            // Extraction failed, fall back to default icon
+                            await AssignDefaultIconAsync(item);
                         }
 
                         await Task.Delay(15, token);
@@ -314,6 +317,44 @@ namespace TaskManager
                 }
             }
         }
+
+        // Helper method to assign the default icon, reusing a single instance
+        private async Task AssignDefaultIconAsync(ProcessItem item)
+        {
+            if (_dispatcher == null) return;
+
+            if (_defaultIconSource != null)
+            {
+                _dispatcher.TryEnqueue(() => item.IconSource = _defaultIconSource);
+                return;
+            }
+
+            var defaultBitmap = await Task.Run(() => IconHelper.GetDefaultGearBitmap());
+            var tcs = new TaskCompletionSource();
+
+            bool enqueued = _dispatcher.TryEnqueue(async () =>
+            {
+                try
+                {
+                    var bitmapSource = new SoftwareBitmapSource();
+                    await bitmapSource.SetBitmapAsync(defaultBitmap);
+                    _defaultIconSource = bitmapSource;
+                    item.IconSource = _defaultIconSource;
+                }
+                catch { }
+                finally
+                {
+                    defaultBitmap?.Dispose();
+                    tcs.TrySetResult();
+                }
+            });
+
+            if (enqueued)
+            {
+                await tcs.Task;
+            }
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         protected void OnPropertyChanged([CallerMemberName] string? name = null) =>
@@ -331,7 +372,6 @@ namespace TaskManager
             GC.SuppressFinalize(this);
         }
 
-        private bool _isListFocused;
         public bool IsListFocused
         {
             get => _isListFocused;
@@ -342,8 +382,6 @@ namespace TaskManager
                 OnPropertyChanged();
             }
         }
-
-        private bool _hasUserSelection;
         public bool HasUserSelection
         {
             get => _hasUserSelection;
