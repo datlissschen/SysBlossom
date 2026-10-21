@@ -171,6 +171,11 @@ namespace TaskManager
                         {
                             _iconQueue.Enqueue(newItem);
                         }
+                        else
+                        {
+                            // ADD DEFAULT ICON FOR PROCESSES WITH NO IMAGE PATH
+                            newItem.IconSource = GetDefaultIconSource();
+                        }
 
                         Processes.Insert(i, newItem);
                     }
@@ -252,6 +257,13 @@ namespace TaskManager
                             return null;
                         }, token);
 
+                        if (softwareBitmap == null)
+                        {
+                            // Use your default gear emoji icon
+                            softwareBitmap = await Task.Run(() =>
+                                IconHelper.GetSoftwareBitmapFromIcon(GetDefaultGearIcon()), token);
+                        }
+
                         if (softwareBitmap != null && _dispatcher != null && !token.IsCancellationRequested)
                         {
                             var tcs = new TaskCompletionSource();
@@ -278,6 +290,11 @@ namespace TaskManager
                             {
                                 await tcs.Task;
                             }
+                        }
+                        else
+                        {
+                            // If we still have no bitmap, use default
+                            _dispatcher?.TryEnqueue(() => item.IconSource = GetDefaultIconSource());
                         }
 
                         await Task.Delay(15, token);
