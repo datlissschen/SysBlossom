@@ -18,16 +18,20 @@ using TaskManager.Services;
 
 namespace TaskManager
 {
-    public class MainViewModel : INotifyPropertyChanged, IDisposable
+    public partial class MainViewModel(ProcessService service) : INotifyPropertyChanged, IDisposable
     {
-        private readonly ProcessService _service;
+        private readonly ProcessService _service = service ?? throw new ArgumentNullException(nameof(service));
         private readonly ConcurrentQueue<ProcessItem> _iconQueue = new();
         private readonly SemaphoreSlim _refreshLock = new(1, 1);
         private CancellationTokenSource? _cts;
         private DispatcherQueue? _dispatcher;
         private bool _isDisposed;
 
-        public ObservableCollection<ProcessItem> Processes { get; } = new();
+        public MainViewModel() : this(new ProcessService())
+        {
+        }
+
+        public ObservableCollection<ProcessItem> Processes { get; } = [];
 
         private double _totalCpu;
         public double TotalCpu
@@ -75,18 +79,6 @@ namespace TaskManager
             ? $"{(TotalRam / 1024.0):F2} GB"
             : $"{TotalRam:F0} MB";
 
-        public MainViewModel() : this(new ProcessService())
-        {
-        }
-
-        public MainViewModel(ProcessService service)
-        {
-            _service = service ?? throw new ArgumentNullException(nameof(service));
-        }
-
-        /// <summary>
-        /// Initialisiert das ViewModel mit dem UI-Dispatcher und startet den Hintergrund-Worker für Icons.
-        /// </summary>
         public void Initialize(DispatcherQueue dispatcher)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
@@ -96,9 +88,6 @@ namespace TaskManager
             _ = StartIconWorkerAsync(_cts.Token);
         }
 
-        /// <summary>
-        /// Aktualisiert die Prozessliste asynchron und verhindert überlappende Aufrufe via SemaphoreSlim.
-        /// </summary>
         public async Task RefreshDataAsync()
         {
             if (_isDisposed || !await _refreshLock.WaitAsync(0))
@@ -106,9 +95,8 @@ namespace TaskManager
 
             try
             {
-                var allData = await Task.Run(() => _service.GetProcesses());
+                var allData = await Task.Run(_service.GetProcesses);
 
-                // Gesamtauslastung über ALLE Prozesse berechnen (unabhängig vom Suchfilter)
                 double overallCpu = Math.Clamp(allData.Sum(p => p.CpuUsage), 0.0, 100.0);
                 double overallRam = allData.Sum(p => p.MemoryMB);
 
@@ -131,7 +119,6 @@ namespace TaskManager
 
                 var sortedList = sortedQuery.ToList();
 
-                // Sicheres Erstellen des Lookup-Dictionaries (resistent gegen evtl. Duplikate)
                 var currentItems = Processes
                     .GroupBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
                     .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
@@ -189,13 +176,8 @@ namespace TaskManager
             }
         }
 
-        /// <summary>
-        /// Beendet ausgewählte Prozessgruppen sicher über den ProcessService und aktualisiert anschließend die Ansicht.
-        /// </summary>
         public async Task<(bool Success, string? ErrorMessage)> KillSelectedProcessesAsync(IEnumerable<ProcessItem> selectedItems)
         {
-            if (selectedItems == null) return (true, null);
-
             var itemsList = selectedItems.ToList();
             if (itemsList.Count == 0) return (true, null);
 
@@ -204,17 +186,16 @@ namespace TaskManager
                 .SelectMany(item => item.SubProcesses.Select(s => s.Pid))
                 .ToList();
 
-            bool success = await Task.Run(() => _service.KillProcesses(pids, out string? error)
-                ? (Result: true, Error: (string?)null)
-                : (Result: false, Error: error)) is var res && res.Result;
+            var result = await Task.Run(() =>
+            {
+                bool ok = _service.KillProcesses(pids, out string? error);
+                return (Success: ok, Error: error);
+            });
 
             await RefreshDataAsync();
-            return (res.Result, res.Error);
+            return result;
         }
 
-        /// <summary>
-        /// Hintergrund-Worker, der Prozess-Icons aus der Warteschlange extrahiert und dabei CancellationTokens beachtet.
-        /// </summary>
         private async Task StartIconWorkerAsync(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
@@ -223,12 +204,13 @@ namespace TaskManager
                 {
                     if (_iconQueue.TryDequeue(out var item))
                     {
-                        if (string.IsNullOrEmpty(item.ImagePath))
+                        string? path = item.ImagePath;
+                        if (string.IsNullOrEmpty(path))
                         {
                             continue;
                         }
 
-                        if (IconCache.TryGetIcon(item.ImagePath, out var cachedIcon))
+                        if (IconCache.TryGetIcon(path, out var cachedIcon))
                         {
                             _dispatcher?.TryEnqueue(() => item.IconSource = cachedIcon);
                         }
@@ -238,9 +220,9 @@ namespace TaskManager
                             {
                                 try
                                 {
-                                    if (File.Exists(item.ImagePath))
+                                    if (File.Exists(path))
                                     {
-                                        using Icon? icon = Icon.ExtractAssociatedIcon(item.ImagePath);
+                                        using Icon? icon = Icon.ExtractAssociatedIcon(path);
                                         if (icon != null)
                                         {
                                             return IconHelper.GetSoftwareBitmapFromIcon(icon);
@@ -249,7 +231,7 @@ namespace TaskManager
                                 }
                                 catch (Exception ex)
                                 {
-                                    Debug.WriteLine($"Icon-Extraktion fehlgeschlagen ({item.ImagePath}): {ex.Message}");
+                                    Debug.WriteLine($"Icon extraction failed ({path}): {ex.Message}");
                                 }
                                 return null;
                             }, token);
@@ -266,7 +248,7 @@ namespace TaskManager
                                     }
                                     catch (Exception ex)
                                     {
-                                        Debug.WriteLine($"Fehler beim Setzen von SoftwareBitmapSource: {ex.Message}");
+                                        Debug.WriteLine($"Failed to set SoftwareBitmapSource: {ex.Message}");
                                     }
                                     finally
                                     {
@@ -293,7 +275,7 @@ namespace TaskManager
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Unerwarteter Fehler im IconWorker: {ex.Message}");
+                    Debug.WriteLine($"Unexpected error in IconWorker: {ex.Message}");
                 }
             }
         }
@@ -305,12 +287,14 @@ namespace TaskManager
 
         public void Dispose()
         {
-            if (_isDisposed) return;
-            _isDisposed = true;
-
-            _cts?.Cancel();
-            _cts?.Dispose();
-            _refreshLock.Dispose();
+            if (!_isDisposed)
+            {
+                _isDisposed = true;
+                _cts?.Cancel();
+                _cts?.Dispose();
+                _refreshLock.Dispose();
+            }
+            GC.SuppressFinalize(this);
         }
     }
 }

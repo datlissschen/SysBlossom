@@ -7,18 +7,19 @@ using System.Runtime.CompilerServices;
 namespace TaskManager.Models
 {
     /// <summary>
-    /// Repräsentiert einen gruppierten Prozesseintrag in der Taskmanager-Tabelle.
+    /// Represents a single grouped entry in the task manager table.
+    /// Marked partial for CsWinRT AOT / ABI source generation.
     /// </summary>
-    public class ProcessItem : INotifyPropertyChanged
+    public partial class ProcessItem : INotifyPropertyChanged
     {
-        private List<SubProcessInfo> _subProcesses = new();
+        private List<SubProcessInfo> _subProcesses = [];
         private double _cpuUsage;
         private double _memoryMB;
         private string _status = "Active";
         private bool _isFlyoutOpen;
         private ImageSource? _iconSource;
 
-        public string Name { get; init; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
         public string? ImagePath { get; set; }
 
         public List<SubProcessInfo> SubProcesses
@@ -26,7 +27,7 @@ namespace TaskManager.Models
             get => _subProcesses;
             set
             {
-                _subProcesses = value ?? new List<SubProcessInfo>();
+                _subProcesses = value ?? [];
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(PidCount));
             }
@@ -48,9 +49,6 @@ namespace TaskManager.Models
 
         public string CpuUsageDisplay => $"{CpuUsage:F1}%";
 
-        /// <summary>
-        /// Numerischer Speicherwert in MB für schnelles Sortieren und Summieren ohne Regex.
-        /// </summary>
         public double MemoryMB
         {
             get => _memoryMB;
@@ -63,9 +61,6 @@ namespace TaskManager.Models
             }
         }
 
-        /// <summary>
-        /// Formatierter String für das UI-Binding.
-        /// </summary>
         public string MemoryUsage => $"{MemoryMB:F0} MB";
 
         public string Status

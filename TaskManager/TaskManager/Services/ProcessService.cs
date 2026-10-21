@@ -13,18 +13,12 @@ namespace TaskManager.Services
         private readonly int _processorCount = Math.Max(1, Environment.ProcessorCount);
         private readonly int _currentProcessId = Environment.ProcessId;
 
-        /// <summary>
-        /// Liste kritischer Windows-Systemprozesse, die niemals beendet werden dürfen (Schutz vor BSOD/Systemabsturz).
-        /// </summary>
         private static readonly HashSet<string> ProtectedProcesses = new(StringComparer.OrdinalIgnoreCase)
         {
             "System", "Idle", "Registry", "smss", "csrss", "wininit",
             "services", "lsass", "svchost", "winlogon", "dwm", "fontdrvhost", "Memory Compression"
         };
 
-        /// <summary>
-        /// Leichtgewichtiges Struct als Ersatz für 'dynamic', um Boxing und DLR-Overhead zu vermeiden.
-        /// </summary>
         private readonly record struct RawProcessData(
             int Id,
             string Name,
@@ -33,9 +27,6 @@ namespace TaskManager.Services
             bool IsResponding,
             string? Path);
 
-        /// <summary>
-        /// Liest alle laufenden Prozesse aus, berechnet die CPU-Auslastung und gibt alle OS-Handles sauber frei.
-        /// </summary>
         public List<ProcessItem> GetProcesses()
         {
             var rawList = new List<RawProcessData>();
@@ -58,10 +49,7 @@ namespace TaskManager.Services
                     {
                         isResponding = p.Responding;
                     }
-                    catch
-                    {
-                        // Zugriff auf Responding kann bei manchen Systemprozessen fehlschlagen
-                    }
+                    catch { }
 
                     double cpuPercent = 0;
                     try
@@ -79,18 +67,15 @@ namespace TaskManager.Services
                         }
                         _history[pid] = (currentTime, currentProcessorTime);
                     }
-                    catch (Win32Exception) { /* Zugriff verweigert (geschützter Prozess) */ }
-                    catch (InvalidOperationException) { /* Prozess wurde bereits beendet */ }
+                    catch (Win32Exception) { }
+                    catch (InvalidOperationException) { }
 
                     string? fullPath = null;
                     try
                     {
                         fullPath = p.MainModule?.FileName;
                     }
-                    catch
-                    {
-                        // Zugriff auf MainModule (z. B. 32/64-Bit-Barriere oder Systemprozess) nicht erlaubt
-                    }
+                    catch { }
 
                     rawList.Add(new RawProcessData(
                         Id: pid,
@@ -101,30 +86,26 @@ namespace TaskManager.Services
                         Path: fullPath
                     ));
                 }
-                catch
-                {
-                    // Prozess ist während der Abfrage beendet worden oder vollständig geschützt
-                }
+                catch { }
                 finally
                 {
-                    // WICHTIG: Gibt das native Betriebssystem-Handle sofort frei!
                     p.Dispose();
                 }
             }
 
-            // Verwaiste Prozess-IDs aus der Historie bereinigen (verhindert Memory Leak)
             var ghostIds = _history.Keys.Where(id => !activeIds.Contains(id)).ToList();
             foreach (int id in ghostIds)
             {
                 _history.Remove(id);
             }
 
-            // Gruppierung nach Prozessname
             var groupedList = rawList
                 .GroupBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
                 .Select(group =>
                 {
                     double totalMemoryMB = group.Sum(x => x.MemoryBytes) / (1024.0 * 1024.0);
+                    string? imagePath = group.Select(x => x.Path).FirstOrDefault(path => !string.IsNullOrEmpty(path));
+
                     return new ProcessItem
                     {
                         Name = group.Key,
@@ -137,7 +118,7 @@ namespace TaskManager.Services
                         CpuUsage = Math.Clamp(group.Sum(x => x.Cpu), 0.0, 100.0),
                         MemoryMB = totalMemoryMB,
                         Status = group.All(x => x.IsResponding) ? "Active" : "Hung",
-                        ImagePath = group.FirstOrDefault(x => !string.IsNullOrEmpty(x.Path)).Path
+                        ImagePath = imagePath
                     };
                 })
                 .OrderByDescending(x => x.CpuUsage)
@@ -146,17 +127,13 @@ namespace TaskManager.Services
             return groupedList;
         }
 
-        /// <summary>
-        /// Prüft, ob eine Prozessgruppe kritische Systemprozesse enthält.
-        /// </summary>
         public bool IsCriticalProcess(string processName)
         {
             return !string.IsNullOrWhiteSpace(processName) && ProtectedProcesses.Contains(processName);
         }
 
-        /// <summary>
-        /// Beendet die angegebenen Prozess-IDs unter Einhaltung von Sicherheitsstandards.
-        /// </summary>
+        public bool KillProcesses(List<int> pids) => KillProcesses(pids, out _);
+
         public bool KillProcesses(IEnumerable<int> pids, out string? errorMessage)
         {
             errorMessage = null;
@@ -166,7 +143,7 @@ namespace TaskManager.Services
             {
                 if (pid <= 4 || pid == _currentProcessId)
                 {
-                    errors.Add($"PID {pid} ist geschützt und darf nicht beendet werden.");
+                    errors.Add($"PID {pid} is protected and cannot be terminated.");
                     continue;
                 }
 
@@ -176,19 +153,16 @@ namespace TaskManager.Services
 
                     if (ProtectedProcesses.Contains(p.ProcessName))
                     {
-                        errors.Add($"Systemprozess '{p.ProcessName}' (PID {pid}) darf aus Sicherheitsgründen nicht beendet werden.");
+                        errors.Add($"System process '{p.ProcessName}' (PID {pid}) cannot be terminated for safety reasons.");
                         continue;
                     }
 
                     p.Kill();
                 }
-                catch (ArgumentException)
-                {
-                    // Prozess existiert bereits nicht mehr -> kein Fehler
-                }
+                catch (ArgumentException) { }
                 catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
                 {
-                    Debug.WriteLine($"Fehler beim Beenden von PID {pid}: {ex.Message}");
+                    Debug.WriteLine($"Failed to kill PID {pid}: {ex.Message}");
                     errors.Add($"PID {pid}: {ex.Message}");
                 }
             }

@@ -1,15 +1,16 @@
 ﻿namespace TaskManager.Models
 {
     /// <summary>
-    /// Repräsentiert Informationen über einen einzelnen Unterprozess (PID, CPU-Last und Arbeitsspeicher).
+    /// Represents information about a subprocess, including its process ID, CPU usage, and memory consumption.
     /// </summary>
-    public class SubProcessInfo
+    public partial class SubProcessInfo
     {
-        public int Pid { get; init; }
-        public double Cpu { get; init; }
-        public double MemoryMB { get; init; }
+        public int Pid { get; set; }
+        public double Cpu { get; set; }
+        public double MemoryMB { get; set; }
 
+        // Kept 'Memory' property name so existing XAML bindings (x:Bind Memory) do not break!
+        public string Memory => $"{MemoryMB:F0} MB";
         public string CpuDisplay => $"{Cpu:F1}%";
-        public string MemoryDisplay => $"{MemoryMB:F1} MB";
     }
 }
